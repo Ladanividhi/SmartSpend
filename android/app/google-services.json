@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "975237376352",
+    "project_id": "smartspend-e464e",
+    "storage_bucket": "smartspend-e464e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:975237376352:android:274706b169b02a19ab1605",
+        "android_client_info": {
+          "package_name": "com.example.smartspend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "975237376352-6haa0lkeo7ta576tcti38olp2fhc4ojn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smartspend",
+            "certificate_hash": "ef424929f238a96fcc4a30d9ad9d9cfd097615ed"
+          }
+        },
+        {
+          "client_id": "975237376352-rrjnhoaattor9vlr0kkdm0e4h7ck42v1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCv8MZN8F6_R0t-Xjo4N-s81teH3B60gG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "975237376352-rrjnhoaattor9vlr0kkdm0e4h7ck42v1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
