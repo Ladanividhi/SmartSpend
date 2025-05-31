@@ -1,4 +1,8 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:SmartSpend/screens/ChartPage.dart';
+import 'package:SmartSpend/screens/RecordPage.dart';
+import 'package:SmartSpend/screens/ReportsPage.dart';
+import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -11,25 +15,12 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // Default index, but won't show as selected
 
   signout() async {
     await GoogleSignIn().signOut();
     await FirebaseAuth.instance.signOut();
   }
-
-  // Mock data for demonstration
-  final List<Map<String, dynamic>> transactions = [
-    {"icon": Icons.savings, "color": Colors.pink[100], "label": "Investments", "amount": 500.00},
-    {"icon": Icons.card_giftcard, "color": Colors.green[100], "label": "Gift", "amount": -10.00},
-    {"icon": Icons.pets, "color": Colors.teal[100], "label": "Pet", "amount": -20.00},
-    {"icon": Icons.shopping_cart, "color": Colors.green[200], "label": "Shopping", "amount": -236.00},
-    {"icon": Icons.volunteer_activism, "color": Colors.blue[100], "label": "Donate", "amount": -20.00},
-    {"icon": Icons.restaurant, "color": Colors.teal[200], "label": "Food", "amount": -5.00},
-    {"icon": Icons.pets, "color": Colors.teal[100], "label": "Pet", "amount": -56.00},
-    {"icon": Icons.icecream, "color": Colors.yellow[100], "label": "Snacks", "amount": -5.00},
-    {"icon": Icons.home, "color": Colors.purple[100], "label": "Home", "amount": -63.00},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -37,10 +28,15 @@ class _DashboardState extends State<Dashboard> {
       backgroundColor: bg_color,
       body: Column(
         children: [
-          // Header
+          // New Header Design
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 48, left: 24, right: 24, bottom: 24),
+            padding: const EdgeInsets.only(
+              top: 48,
+              left: 24,
+              right: 24,
+              bottom: 24,
+            ),
             decoration: BoxDecoration(
               color: primary_color,
               borderRadius: const BorderRadius.only(
@@ -54,12 +50,11 @@ class _DashboardState extends State<Dashboard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(width: 40), // Placeholder for left side
                     Text(
                       'Smart Spend',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
+                        fontSize: 27,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.1,
                       ),
@@ -68,13 +63,22 @@ class _DashboardState extends State<Dashboard> {
                       icon: Icon(Icons.more_vert, color: Colors.white),
                       onSelected: (value) {
                         if (value == 'settings') {
-                          // Handle settings
                           print('Settings clicked');
                         } else if (value == 'logout') {
                           signout();
-                      }
+                        }
                       },
                       itemBuilder: (BuildContext context) => [
+                        PopupMenuItem(
+                          value: 'settings',
+                          child: Text(
+                            'Set Budget',
+                            style: TextStyle(
+                              color: text_color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                         PopupMenuItem(
                           value: 'settings',
                           child: Text(
@@ -99,97 +103,99 @@ class _DashboardState extends State<Dashboard> {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Expenses', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                        Text('-622.00', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Income', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                        Text('5500.00', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ],
+                const SizedBox(height: 24),
+                // New Welcome Section
+                Text(
+                  'Hello, User',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Text(
+                  'Welcome back! Let\'s manage your finances',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Financial Overview Cards
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Text('2022', style: TextStyle(color: Colors.white70)),
-                        SizedBox(width: 8),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.white24,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Text('09', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 18),
-                            ],
-                          ),
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Total Balance',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              '\$4,878.00',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    Text('Income: 5500.00', style: TextStyle(color: Colors.white70)),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Monthly Savings',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              '\$1,200.00',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-          // Date Row
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('9/1  Thursday', style: TextStyle(color: text_color)),
-                Text('Expenses: -622.00   Income: 5500.00', style: TextStyle(color: text_color)),
-              ],
-            ),
-          ),
-          // Transaction List
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 0, left: 0, right: 0, bottom: 0),
-              itemCount: transactions.length,
-              itemBuilder: (context, index) {
-                final tx = transactions[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: tx["color"],
-                    child: Icon(tx["icon"], color: primary_color),
-                  ),
-                  title: Text(tx["label"], style: TextStyle(fontWeight: FontWeight.w600)),
-                  trailing: Text(
-                    tx["amount"] > 0 ? "+${tx["amount"]}" : "${tx["amount"]}",
-                    style: TextStyle(
-                      color: tx["amount"] > 0 ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+          // Empty space for content
+          Expanded(child: Container()),
         ],
       ),
-      // Attractive Bottom Navigation Bar
+      // Bottom Navigation Bar
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -209,7 +215,7 @@ class _DashboardState extends State<Dashboard> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: primary_color,
+          selectedItemColor: Colors.grey, // Same as unselected color
           unselectedItemColor: Colors.grey,
           showSelectedLabels: true,
           showUnselectedLabels: true,
@@ -218,6 +224,38 @@ class _DashboardState extends State<Dashboard> {
             setState(() {
               _selectedIndex = index;
             });
+            switch (index) {
+              case 0:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => RecordPage()),
+                );
+                break;
+              case 1:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ChartPage()),
+                );
+                break;
+              case 2:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => RecordPage()),
+                );
+                break;
+              case 3:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ReportsPage()),
+                );
+                break;
+              case 4:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
+                break;
+            }
           },
           items: [
             BottomNavigationBarItem(

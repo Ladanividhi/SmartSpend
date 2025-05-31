@@ -1,6 +1,6 @@
-import 'package:SmartSpend/screens/Dashboard.dart';
-import 'package:SmartSpend/screens/Homepage.dart';
+import 'package:SmartSpend/screens/RecordPage.dart';
 import 'package:SmartSpend/screens/Login.dart';
+import 'package:SmartSpend/screens/Dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
