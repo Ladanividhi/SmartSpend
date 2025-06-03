@@ -1,4 +1,5 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -12,24 +13,56 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   login() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-    final GoogleSignInAuthentication? googleAuth =
-    await googleUser?.authentication;
+      if (googleUser == null) return; // User cancelled
 
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
-    );
+      final GoogleSignInAuthentication? googleAuth = await googleUser.authentication;
 
-    await FirebaseAuth.instance.signInWithCredential(credential);
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Reference to Firestore
+        FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+        // Check if the email already exists
+        QuerySnapshot existingUser = await firestore
+            .collection('Users')
+            .where('Email', isEqualTo: user.email)
+            .get();
+
+        if (existingUser.docs.isEmpty) {
+          // If user doesn't exist, add them
+          await firestore.collection('Users').add({
+            'Name': user.displayName,
+            'Email': user.email,
+            'Gender': null,
+            'Mobile': null,
+            'Address': null,
+            'Pincode': null,
+          });
+          print('New user added to Firestore');
+        } else {
+          print('User already exists in Firestore');
+        }
+      }
+    } catch (e) {
+      print('Login error: $e');
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
-      // backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           child: Column(
