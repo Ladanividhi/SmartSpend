@@ -37,11 +37,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _handleLogout() async {
-    await GoogleSignIn().signOut();
-    Navigator.of(context).pushReplacementNamed('/login');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

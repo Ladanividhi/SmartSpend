@@ -49,8 +49,6 @@ class _HelpPageState extends State<HelpPage> {
               '&body=Name: $userName\nEmail: $userEmail\n\n$message',
         ),
       );
-
-
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri, mode: LaunchMode.externalApplication);
         
