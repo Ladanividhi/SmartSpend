@@ -1,9 +1,11 @@
 import 'package:SmartSpend/Constants.dart';
 import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
+import 'package:SmartSpend/screens/Login.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
-import 'package:SmartSpend/screens/ReportsPage.dart';
+import 'package:SmartSpend/screens/BudgetsPage.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
+import 'package:SmartSpend/screens/Settings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -22,6 +24,7 @@ class _DashboardState extends State<Dashboard> {
   signout() async {
     await GoogleSignIn().signOut();
     await FirebaseAuth.instance.signOut();
+
   }
 
   @override
@@ -72,14 +75,21 @@ class _DashboardState extends State<Dashboard> {
                       icon: Icon(Icons.more_vert, color: Colors.white),
                       onSelected: (value) {
                         if (value == 'settings') {
-                          print('Settings clicked');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => SettingsPage()),
+                          );
                         } else if (value == 'logout') {
                           signout();
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => Login()),
+                          );
                         }
                       },
                       itemBuilder: (BuildContext context) => [
                         PopupMenuItem(
-                          value: 'settings',
+                          value: 'budgets',
                           child: Text(
                             'Set Budget',
                             style: TextStyle(
@@ -256,7 +266,7 @@ class _DashboardState extends State<Dashboard> {
               case 3:
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ReportsPage()),
+                  MaterialPageRoute(builder: (context) => BudgetsPage()),
                 );
                 break;
               case 4:
@@ -296,7 +306,7 @@ class _DashboardState extends State<Dashboard> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_rounded),
-              label: 'Reports',
+              label: 'Budgets',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),

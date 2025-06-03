@@ -1,7 +1,7 @@
 import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
-import 'package:SmartSpend/screens/ReportsPage.dart';
+import 'package:SmartSpend/screens/BudgetsPage.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartSpend/Constants.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -19,11 +19,36 @@ class _ChartPageState extends State<ChartPage> {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> categoryData = [
-      {'label': 'Shopping', 'value': 236.0, 'color': const Color(0xFFC8BE68), 'icon': 'shopping.png'},
-      {'label': 'Beauty', 'value': 136.0, 'color': const Color(0xFFCD76D3), 'icon': 'beauty.png'},
-      {'label': 'Pet', 'value': 76.0, 'color': const Color(0xFF108898), 'icon': 'pet.png'},
-      {'label': 'Entertainment', 'value': 71.0, 'color': const Color(0xFFBA6B86), 'icon': 'entertainment.png'},
-      {'label': 'Home', 'value': 63.0, 'color': const Color(0xFF8EC18F), 'icon': 'homedecor.png'},
+      {
+        'label': 'Shopping',
+        'value': 236.0,
+        'color': const Color(0xFFC8BE68),
+        'icon': 'shopping.png',
+      },
+      {
+        'label': 'Beauty',
+        'value': 136.0,
+        'color': const Color(0xFFCD76D3),
+        'icon': 'beauty.png',
+      },
+      {
+        'label': 'Pet',
+        'value': 76.0,
+        'color': const Color(0xFF108898),
+        'icon': 'pet.png',
+      },
+      {
+        'label': 'Entertainment',
+        'value': 71.0,
+        'color': const Color(0xFFBA6B86),
+        'icon': 'entertainment.png',
+      },
+      {
+        'label': 'Home',
+        'value': 63.0,
+        'color': const Color(0xFF8EC18F),
+        'icon': 'homedecor.png',
+      },
     ];
 
     double total = categoryData.fold(0, (sum, item) => sum + item['value']);
@@ -34,24 +59,32 @@ class _ChartPageState extends State<ChartPage> {
         backgroundColor: primary_color,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          'Records',
+          'Charts',
           style: TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
-        ),        actions: [
+        ),
+        actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {},
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'today', child: Text('Today')),
-              PopupMenuItem(value: 'select_date', child: Text('Select Date')),
-              PopupMenuItem(value: 'this_week', child: Text('This Week')),
-              PopupMenuItem(value: 'this_month', child: Text('This Month')),
-              PopupMenuItem(value: 'this_year', child: Text('This Year')),
-              PopupMenuItem(value: 'custom', child: Text('Customize Range')),
-            ],
+            itemBuilder:
+                (context) => const [
+                  PopupMenuItem(value: 'today', child: Text('Today')),
+                  PopupMenuItem(
+                    value: 'select_date',
+                    child: Text('Select Date'),
+                  ),
+                  PopupMenuItem(value: 'this_week', child: Text('This Week')),
+                  PopupMenuItem(value: 'this_month', child: Text('This Month')),
+                  PopupMenuItem(value: 'this_year', child: Text('This Year')),
+                  PopupMenuItem(
+                    value: 'custom',
+                    child: Text('Customize Range'),
+                  ),
+                ],
           ),
         ],
       ),
@@ -65,20 +98,21 @@ class _ChartPageState extends State<ChartPage> {
                 aspectRatio: 1.3,
                 child: PieChart(
                   PieChartData(
-                    sections: categoryData.map((item) {
-                      final percentage = (item['value'] / total) * 100;
-                      return PieChartSectionData(
-                        value: item['value'],
-                        color: item['color'],
-                        radius: 60,
-                        title: '${percentage.toStringAsFixed(1)}%',
-                        titleStyle: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      );
-                    }).toList(),
+                    sections:
+                        categoryData.map((item) {
+                          final percentage = (item['value'] / total) * 100;
+                          return PieChartSectionData(
+                            value: item['value'],
+                            color: item['color'],
+                            radius: 60,
+                            title: '${percentage.toStringAsFixed(1)}%',
+                            titleStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          );
+                        }).toList(),
                     sectionsSpace: 4,
                     centerSpaceRadius: 40,
                     centerSpaceColor: bg_color,
@@ -86,7 +120,10 @@ class _ChartPageState extends State<ChartPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text('Top lists', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Top lists',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               ...categoryData.map((item) {
                 final percent = (item['value'] / total) * 100;
@@ -100,7 +137,10 @@ class _ChartPageState extends State<ChartPage> {
                         radius: 20,
                         child: Padding(
                           padding: const EdgeInsets.all(5.0),
-                          child: Image.asset('assets/icons/${item['icon']}', width: 24),
+                          child: Image.asset(
+                            'assets/icons/${item['icon']}',
+                            width: 24,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -110,7 +150,9 @@ class _ChartPageState extends State<ChartPage> {
                           children: [
                             Text(
                               '${item['label']} ${percent.toStringAsFixed(2)}%',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             LinearProgressIndicator(
@@ -174,18 +216,20 @@ class _ChartPageState extends State<ChartPage> {
                   context,
                   MaterialPageRoute(builder: (context) => AddExpense()),
                 );
+                _selectedIndex = 1;
                 break;
               case 3:
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => ReportsPage()),
+                  MaterialPageRoute(builder: (context) => BudgetsPage()),
                 );
                 break;
               case 4:
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ProfilePage()),
                 );
+                _selectedIndex = 1;
                 break;
             }
           },
@@ -218,7 +262,7 @@ class _ChartPageState extends State<ChartPage> {
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_rounded),
-              label: 'Reports',
+              label: 'Budgets',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),

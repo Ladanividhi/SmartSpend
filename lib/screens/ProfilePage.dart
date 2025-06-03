@@ -54,7 +54,14 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         backgroundColor: primary_color,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -123,6 +130,7 @@ class _ProfilePageState extends State<ProfilePage> {
               _buildLabel('Pincode'),
               TextFormField(
                 keyboardType: TextInputType.number,
+                maxLength: 6,
                 onChanged: (value) => pincode = value,
                 decoration: _inputDecoration('Enter pincode'),
               ),

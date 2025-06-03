@@ -2,7 +2,7 @@ import 'package:SmartSpend/Constants.dart';
 import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
-import 'package:SmartSpend/screens/ReportsPage.dart';
+import 'package:SmartSpend/screens/BudgetsPage.dart';
 import 'package:flutter/material.dart';
 
 class RecordPage extends StatefulWidget {
@@ -168,18 +168,20 @@ class _RecordPageState extends State<RecordPage> {
                   context,
                   MaterialPageRoute(builder: (context) => AddExpense()),
                 );
+                _selectedIndex = 0;
                 break;
               case 3:
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => ReportsPage()),
+                  MaterialPageRoute(builder: (context) => BudgetsPage()),
                 );
                 break;
               case 4:
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ProfilePage()),
                 );
+                _selectedIndex = 0;
                 break;
             }
           },
@@ -212,7 +214,7 @@ class _RecordPageState extends State<RecordPage> {
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_rounded),
-              label: 'Reports',
+              label: 'Budgets',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
