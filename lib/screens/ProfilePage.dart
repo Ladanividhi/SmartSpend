@@ -1,8 +1,6 @@
-import 'package:SmartSpend/Constants.dart';
-import 'package:SmartSpend/screens/ChartPage.dart';
-import 'package:SmartSpend/screens/RecordPage.dart';
-import 'package:SmartSpend/screens/ReportsPage.dart';
 import 'package:flutter/material.dart';
+import 'package:SmartSpend/Constants.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -12,129 +10,164 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _selectedIndex = 4; // Profile index
+
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+
+  String? gender;
+  String mobileNumber = '';
+  String address = '';
+  String pincode = '';
+
+  final _formKey = GlobalKey<FormState>();
+
+  List<String> genderOptions = ['Male', 'Female', 'Others'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGoogleUserData();
+  }
+
+  Future<void> _loadGoogleUserData() async {
+    GoogleSignIn googleSignIn = GoogleSignIn();
+    try {
+      final account = await googleSignIn.signInSilently();
+      if (account != null) {
+        setState(() {
+           String name = account.displayName ?? '';
+           String email = account.email;
+          nameController.text = name;
+          emailController.text = email;
+        });
+      }
+    } catch (error) {
+      print('Google Sign-In error: $error');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg_color,
       appBar: AppBar(
-        iconTheme: IconThemeData(
-          color: Colors.white, // set back icon color to white
-        ),
         backgroundColor: primary_color,
-        title: Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Profile', style: TextStyle(color: Colors.white)),
       ),
-      body: Center(
-        child: Text(
-          'Profile Page',
-          style: TextStyle(
-            fontSize: 24,
-            color: text_color,
-          ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, -2),
-            ),
-          ],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: primary_color,
-          unselectedItemColor: Colors.grey,
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-            switch (index) {
-              case 0:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => RecordPage()),
-                );
-                break;
-              case 1:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => ChartPage()),
-                );
-                break;
-              case 2:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => RecordPage()),
-                );
-                break;
-              case 3:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => ReportsPage()),
-                );
-                break;
-              case 4:
-                break;
-            }
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt_rounded),
-              label: 'Records',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_rounded),
-              label: 'Chart',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: primary_color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: primary_color.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(Icons.add, color: Colors.white, size: 28),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLabel('Name'),
+              TextFormField(
+                controller: nameController,
+                readOnly: true,
+                decoration: _inputDecoration('Enter your name'),
               ),
-              label: '',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_rounded),
-              label: 'Reports',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Me',
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              _buildLabel('Email'),
+              TextFormField(
+                controller: emailController,
+                readOnly: true,
+                decoration: _inputDecoration('Your email'),
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Gender'),
+              DropdownButtonFormField<String>(
+                value: gender,
+                items: genderOptions.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                decoration: _inputDecoration('Select your gender'),
+                onChanged: (value) {
+                  setState(() {
+                    gender = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Mobile Number'),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                maxLength: 10,
+                onChanged: (value) => mobileNumber = value,
+                decoration: _inputDecoration('Enter 10-digit mobile number'),
+                validator: (value) {
+                  if (value == null || value.length != 10) {
+                    return 'Enter a valid 10-digit number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Address'),
+              TextFormField(
+                maxLines: 2,
+                onChanged: (value) => address = value,
+                decoration: _inputDecoration('Enter your address'),
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Pincode'),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                onChanged: (value) => pincode = value,
+                decoration: _inputDecoration('Enter pincode'),
+              ),
+              const SizedBox(height: 32),
+
+              Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Save logic here
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Changes saved successfully!')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary_color,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600));
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
       ),
     );
   }

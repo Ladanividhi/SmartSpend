@@ -1,9 +1,9 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
+import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
 import 'package:flutter/material.dart';
-
-import 'ProfilePage.dart';
 
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -84,9 +84,9 @@ class _ReportsPageState extends State<ReportsPage> {
                 );
                 break;
               case 2:
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => RecordPage()),
+                  MaterialPageRoute(builder: (context) => AddExpense()),
                 );
                 break;
               case 3:

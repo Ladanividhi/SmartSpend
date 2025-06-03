@@ -1,4 +1,5 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
 import 'package:SmartSpend/screens/ReportsPage.dart';
@@ -16,6 +17,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0; // Default index, but won't show as selected
+  User? user;
 
   signout() async {
     await GoogleSignIn().signOut();
@@ -23,7 +25,14 @@ class _DashboardState extends State<Dashboard> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    user = FirebaseAuth.instance.currentUser;
+  }
+
+  @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: bg_color,
       body: Column(
@@ -106,13 +115,14 @@ class _DashboardState extends State<Dashboard> {
                 const SizedBox(height: 24),
                 // New Welcome Section
                 Text(
-                  'Hello, User',
+                  'Hello, ${user!.displayName ?? 'User'}',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 const SizedBox(height: 8),
                 Text(
                   'Welcome back! Let\'s manage your finances',
@@ -238,9 +248,9 @@ class _DashboardState extends State<Dashboard> {
                 );
                 break;
               case 2:
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => RecordPage()),
+                  MaterialPageRoute(builder: (context) => AddExpense()),
                 );
                 break;
               case 3:
