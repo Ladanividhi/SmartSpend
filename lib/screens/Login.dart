@@ -1,4 +1,5 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:SmartSpend/screens/Dashboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +52,10 @@ class _LoginState extends State<Login> {
           print('New user added to Firestore');
         } else {
           print('User already exists in Firestore');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => Dashboard()),
+          );
         }
       }
     } catch (e) {

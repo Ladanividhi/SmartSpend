@@ -18,6 +18,9 @@ class RecordPage extends StatefulWidget {
 
 class _RecordPageState extends State<RecordPage> {
   int _selectedIndex = 0;
+  double totalExpenses = 0;
+  double totalIncome = 0;
+  Map<String, bool> expandedStates = {};
 
   Map<String, String> categoryIcons = {
     'Beauty': 'beauty.png',
@@ -52,6 +55,7 @@ class _RecordPageState extends State<RecordPage> {
   };
 
   List<Map<String, dynamic>> transactions = [];
+  Map<String, List<Map<String, dynamic>>> detailedTransactions = {};
   bool isLoading = true;
 
   @override
@@ -69,7 +73,6 @@ class _RecordPageState extends State<RecordPage> {
     });
 
     try {
-      final formattedDate = DateFormat('yyyy-MM-dd').format(date);
       final snapshot = await FirebaseFirestore.instance
           .collection('Expenses')
           .where('Id', isEqualTo: user.uid)
@@ -85,45 +88,16 @@ class _RecordPageState extends State<RecordPage> {
             docDate.day == date.day;
       }).toList();
 
-
       if (filteredDocs.isEmpty) {
-        Fluttertoast.showToast(
-          msg: "No expenses on this date.",
-          backgroundColor: Colors.black87,
-          textColor: Colors.white,
-          gravity: ToastGravity.CENTER,
-        );
         setState(() {
           transactions = [];
+          detailedTransactions = {};
           isLoading = false;
         });
         return;
       }
 
-      Map<String, double> categoryTotals = {};
-
-      for (var doc in filteredDocs) {
-        final data = doc.data();
-        String category = data['Category'];
-        double amount = (data['Amount'] as num).toDouble();
-
-        if (categoryTotals.containsKey(category)) {
-          categoryTotals[category] = categoryTotals[category]! + amount;
-        } else {
-          categoryTotals[category] = amount;
-        }
-      }
-
-      setState(() {
-        transactions = categoryTotals.entries.map((entry) {
-          return {
-            'label': entry.key,
-            'amount': entry.value,
-            'icon': categoryIcons[entry.key] ?? 'others.png',
-          };
-        }).toList();
-        isLoading = false;
-      });
+      _processAndSetTransactions(filteredDocs);
     } catch (e) {
       print("Error fetching expenses: $e");
       setState(() {
@@ -131,7 +105,6 @@ class _RecordPageState extends State<RecordPage> {
       });
     }
   }
-
 
   Future<void> fetchExpensesInRange(DateTime start, DateTime end) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -172,28 +145,43 @@ class _RecordPageState extends State<RecordPage> {
 
   void _processAndSetTransactions(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
     if (docs.isEmpty) {
-      Fluttertoast.showToast(
-        msg: "No expenses in this period.",
-        backgroundColor: Colors.black87,
-        textColor: Colors.white,
-        gravity: ToastGravity.CENTER,
-      );
       setState(() {
         transactions = [];
+        detailedTransactions = {};
         isLoading = false;
       });
       return;
     }
 
     Map<String, double> categoryTotals = {};
+    Map<String, List<Map<String, dynamic>>> categoryDetails = {};
 
     for (var doc in docs) {
       final data = doc.data();
       String category = data['Category'];
       double amount = (data['Amount'] as num).toDouble();
+      String message = data['Message'] ?? '';
+      DateTime date = (data['Date'] as Timestamp).toDate();
 
+      // Update category totals
       categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
+
+      // Add to detailed transactions
+      if (!categoryDetails.containsKey(category)) {
+        categoryDetails[category] = [];
+      }
+      categoryDetails[category]!.add({
+        'amount': amount,
+        'message': message,
+        'date': date,
+        'id': doc.id,
+      });
     }
+
+    // Sort detailed transactions by date (newest first)
+    categoryDetails.forEach((category, transactions) {
+      transactions.sort((a, b) => b['date'].compareTo(a['date']));
+    });
 
     setState(() {
       transactions = categoryTotals.entries.map((entry) {
@@ -203,6 +191,7 @@ class _RecordPageState extends State<RecordPage> {
           'icon': categoryIcons[entry.key] ?? 'others.png',
         };
       }).toList();
+      detailedTransactions = categoryDetails;
       isLoading = false;
     });
   }
@@ -231,35 +220,64 @@ class _RecordPageState extends State<RecordPage> {
   Future<void> fetchExpensesByCategory() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Expenses')
-          .where('Id', isEqualTo: user.uid)
-          .get();
-
-      Map<String, double> categoryTotals = {};
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        String category = data['Category'];
-        double amount = (data['Amount'] as num).toDouble();
-
-        if (categoryTotals.containsKey(category)) {
-          categoryTotals[category] = categoryTotals[category]! + amount;
-        } else {
-          categoryTotals[category] = amount;
-        }
-      }
-
       setState(() {
-        transactions = categoryTotals.entries.map((entry) {
-          return {
-            'label': entry.key,
-            'amount': entry.value,
-            'icon': categoryIcons[entry.key] ?? 'others.png',
-          };
-        }).toList();
-        isLoading = false;
+        isLoading = true;
       });
+
+      try {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('Expenses')
+            .where('Id', isEqualTo: user.uid)
+            .get();
+
+        Map<String, double> categoryTotals = {};
+        Map<String, List<Map<String, dynamic>>> categoryDetails = {};
+
+        for (var doc in snapshot.docs) {
+          final data = doc.data();
+          String category = data['Category'];
+          double amount = (data['Amount'] as num).toDouble();
+          String message = data['Message'] ?? '';
+          DateTime date = (data['Date'] as Timestamp).toDate();
+
+          // Update category totals
+          categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
+
+          // Add to detailed transactions
+          if (!categoryDetails.containsKey(category)) {
+            categoryDetails[category] = [];
+          }
+          categoryDetails[category]!.add({
+            'amount': amount,
+            'message': message,
+            'date': date,
+            'id': doc.id,
+          });
+          totalExpenses = totalExpenses + data['Amount'];
+        }
+
+        // Sort detailed transactions by date (newest first)
+        categoryDetails.forEach((category, transactions) {
+          transactions.sort((a, b) => b['date'].compareTo(a['date']));
+        });
+
+        setState(() {
+          transactions = categoryTotals.entries.map((entry) {
+            return {
+              'label': entry.key,
+              'amount': entry.value,
+              'icon': categoryIcons[entry.key] ?? 'others.png',
+            };
+          }).toList();
+          detailedTransactions = categoryDetails;
+          isLoading = false;
+        });
+      } catch (e) {
+        print("Error fetching expenses: $e");
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -332,65 +350,351 @@ class _RecordPageState extends State<RecordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg_color,
-      appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white),
-        backgroundColor: primary_color,
-        title: const Text(
-          'Records',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+      body: Column(
+        children: [
+          // Modern Header Design
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(
+              top: 48,
+              left: 24,
+              right: 24,
+              bottom: 24,
+            ),
+            decoration: BoxDecoration(
+              color: primary_color,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Records',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 27,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      onSelected: _onMenuSelected,
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'today',
+                          child: Row(
+                            children: [
+                              Icon(Icons.today, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Today'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'select_date',
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Select Date'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'this_week',
+                          child: Row(
+                            children: [
+                              Icon(Icons.date_range, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('This Week'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'this_month',
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_month, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('This Month'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'this_year',
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_view_month, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('This Year'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'custom',
+                          child: Row(
+                            children: [
+                              Icon(Icons.date_range_outlined, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Customize Range'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Summary Cards
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Expenses',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '₹${totalExpenses.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total Income',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '₹${totalIncome.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onSelected: _onMenuSelected,
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'today', child: Text('Today')),
-              const PopupMenuItem(value: 'select_date', child: Text('Select Date')),
-              const PopupMenuItem(value: 'this_week', child: Text('This Week')),
-              const PopupMenuItem(value: 'this_month', child: Text('This Month')),
-              const PopupMenuItem(value: 'this_year', child: Text('This Year')),
-              const PopupMenuItem(value: 'custom', child: Text('Customize Range')),
-            ],
+          // Transactions List
+          Expanded(
+            child: isLoading
+                ? Center(child: CircularProgressIndicator(color: primary_color))
+                : transactions.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No transactions found',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: transactions.length,
+                        itemBuilder: (context, index) {
+                          final tx = transactions[index];
+                          final isExpanded = expandedStates[tx['label']] ?? false;
+                          final categoryTransactions = detailedTransactions[tx['label']] ?? [];
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      expandedStates[tx['label']] = !isExpanded;
+                                    });
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: icons_shade.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Image.asset(
+                                            'assets/icons/${tx["icon"]}',
+                                            width: 32,
+                                            height: 32,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            tx["label"],
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          '-₹${tx["amount"].toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: tx["amount"] > 0 ? Colors.red : Colors.green,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Icon(
+                                          isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                if (isExpanded && categoryTransactions.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[50],
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(16),
+                                        bottomRight: Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: categoryTransactions.map((transaction) {
+                                        return Container(
+                                          margin: const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Colors.grey[200]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      transaction['message']?.trim().isNotEmpty == true ? transaction['message'] : '---',
+                                                      style: const TextStyle(
+                                                        fontWeight: FontWeight.w500,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '-₹${transaction['amount'].toStringAsFixed(2)}',
+                                                    style: const TextStyle(
+                                                      color: Colors.red,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                DateFormat('dd MMM yyyy, HH:mm').format(transaction['date']),
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator(color: primary_color))
-          : ListView.builder(
-        itemCount: transactions.length,
-        itemBuilder: (context, index) {
-          final tx = transactions[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: icons_shade,
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Image.asset(
-                  'assets/icons/${tx["icon"]}',
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            title: Text(
-              tx["label"],
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            trailing: Text(
-              '${tx["amount"] > 0 ? "-" : ""}${tx["amount"].toStringAsFixed(2)}',
-              style: TextStyle(
-                color: tx["amount"] > 0 ? Colors.red : Colors.green,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          );
-        },
-      ),
-
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
