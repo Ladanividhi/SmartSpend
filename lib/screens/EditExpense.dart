@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartSpend/Constants.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
 class EditExpensePage extends StatefulWidget {
@@ -23,6 +24,95 @@ class _EditExpensePageState extends State<EditExpensePage> {
   void initState() {
     super.initState();
     fetchExpenses();
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, Map<String, dynamic> expense) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final dateTime = expense['datetime'] != null
+            ? (expense['datetime'] as Timestamp).toDate()
+            : DateTime.now();
+        final formattedDateTime = DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
+
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.red),
+              SizedBox(width: 8),
+              Text(
+                "Confirm Delete",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Are you sure you want to delete this expense?"),
+              const SizedBox(height: 16),
+              Text("Category: ${expense['category']}"),
+              Text("Message: ${expense['message']}"),
+              Text("Amount: ₹${expense['amount'].toStringAsFixed(2)}"),
+              Text("Date & Time: $formattedDateTime"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('Expenses')
+                      .doc(expense['id'])
+                      .delete();
+
+                  setState(() {
+                    allExpenses.remove(expense);
+                    _filterExpenses(_searchController.text);
+                  });
+
+                  Navigator.pop(context);
+
+                  // Show Toast
+                  Fluttertoast.showToast(
+                    msg: "Expense deleted successfully!",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.CENTER,
+                    fontSize: 16.0,
+                  );
+                } catch (e) {
+                  print("Delete failed: $e");
+                  Navigator.pop(context);
+
+                  // Show error toast
+                  Fluttertoast.showToast(
+                    msg: "Failed to delete expense.",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.CENTER,
+                    fontSize: 16.0,
+                  );
+                }
+              },
+              child: const Text(
+                "Yes, Delete",
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+
+          ],
+        );
+      },
+    );
   }
 
   Future<void> fetchExpenses() async {
@@ -101,103 +191,108 @@ class _EditExpensePageState extends State<EditExpensePage> {
                 "Edit Expense",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              content:
-                  isLoading
-                      ? const SizedBox(
-                        height: 100,
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                      : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                            controller: categoryController,
-                            decoration: const InputDecoration(
-                              labelText: 'Category',
-                            ),
-                          ),
-                          TextField(
-                            controller: messageController,
-                            decoration: const InputDecoration(
-                              labelText: 'Message',
-                            ),
-                          ),
-                          TextField(
-                            controller: amountController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Amount',
-                            ),
-                          ),
-                        ],
-                      ),
-              actions:
-                  isLoading
-                      ? []
-                      : [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("Cancel"),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primary_color,
-                          ),
-                          onPressed: () async {
-                            setState(() {
-                              isLoading = true;
-                            });
+              content: isLoading
+                  ? const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              )
+                  : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: categoryController,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                    ),
+                  ),
+                  TextField(
+                    controller: messageController,
+                    decoration: const InputDecoration(
+                      labelText: 'Message',
+                    ),
+                  ),
+                  TextField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Amount',
+                    ),
+                  ),
+                ],
+              ),
+              actions: isLoading
+                  ? []
+                  : [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                // Delete Button
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close this dialog
+                    _showDeleteConfirmationDialog(context, oldData);
+                  },
+                  child: const Text(
+                    "Delete",
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
+                ),
 
-                            final updatedExpense = {
-                              'Category': categoryController.text,
-                              'Message': messageController.text,
-                              'Amount':
-                                  double.tryParse(amountController.text) ?? 0,
-                            };
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary_color,
+                  ),
+                  onPressed: () async {
+                    setState(() {
+                      isLoading = true;
+                    });
 
-                            final docId = oldData['id'];
+                    final updatedExpense = {
+                      'Category': categoryController.text,
+                      'Message': messageController.text,
+                      'Amount':
+                      double.tryParse(amountController.text) ?? 0,
+                    };
 
-                            try {
-                              await FirebaseFirestore.instance
-                                  .collection('Expenses')
-                                  .doc(docId)
-                                  .update(updatedExpense);
+                    final docId = oldData['id'];
 
-                              // Update local list
-                              final updatedLocalExpense = {
-                                ...oldData,
-                                ...{
-                                  'category': categoryController.text,
-                                  'message': messageController.text,
-                                  'amount':
-                                      double.tryParse(amountController.text) ??
-                                      0,
-                                },
-                              };
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection('Expenses')
+                          .doc(docId)
+                          .update(updatedExpense);
 
-                              setState(() {
-                                int originalIndex = allExpenses.indexOf(
-                                  oldData,
-                                );
-                                allExpenses[originalIndex] =
-                                    updatedLocalExpense;
-                                _filterExpenses(_searchController.text);
-                              });
+                      final updatedLocalExpense = {
+                        ...oldData,
+                        ...{
+                          'category': categoryController.text,
+                          'message': messageController.text,
+                          'amount':
+                          double.tryParse(amountController.text) ?? 0,
+                        },
+                      };
 
-                              Navigator.pop(context);
-                            } catch (e) {
-                              print("Update failed: $e");
-                              setState(() {
-                                isLoading = false;
-                              });
-                            }
-                          },
-                          child: const Text(
-                            "Save",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
+                      setState(() {
+                        int originalIndex = allExpenses.indexOf(oldData);
+                        allExpenses[originalIndex] = updatedLocalExpense;
+                        _filterExpenses(_searchController.text);
+                      });
+
+                      Navigator.pop(context);
+                    } catch (e) {
+                      print("Update failed: $e");
+                      setState(() {
+                        isLoading = false;
+                      });
+                    }
+                  },
+                  child: const Text(
+                    "Save",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
             );
           },
         );
@@ -263,12 +358,13 @@ class _EditExpensePageState extends State<EditExpensePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            DateFormat('MMMM d, yyyy').format(expense['date']),
+                            DateFormat('MMMM d, yyyy | HH:mm').format(expense['date']),
                             style: const TextStyle(
                               fontSize: 13,
                               color: Colors.grey,
                             ),
                           ),
+
                           const SizedBox(height: 4),
                           Text(
                             expense['category'],

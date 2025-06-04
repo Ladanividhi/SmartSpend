@@ -70,6 +70,7 @@ class _RecordPageState extends State<RecordPage> {
 
     setState(() {
       isLoading = true;
+      expandedStates = {};
     });
 
     try {
@@ -88,15 +89,6 @@ class _RecordPageState extends State<RecordPage> {
             docDate.day == date.day;
       }).toList();
 
-      if (filteredDocs.isEmpty) {
-        setState(() {
-          transactions = [];
-          detailedTransactions = {};
-          isLoading = false;
-        });
-        return;
-      }
-
       _processAndSetTransactions(filteredDocs);
     } catch (e) {
       print("Error fetching expenses: $e");
@@ -112,6 +104,7 @@ class _RecordPageState extends State<RecordPage> {
 
     setState(() {
       isLoading = true;
+      expandedStates = {};
     });
 
     try {
@@ -133,7 +126,6 @@ class _RecordPageState extends State<RecordPage> {
             docDate.isAtSameMomentAs(endDateTime));
       }).toList();
 
-
       _processAndSetTransactions(filteredDocs);
     } catch (e) {
       print("Error fetching expenses in range: $e");
@@ -148,13 +140,23 @@ class _RecordPageState extends State<RecordPage> {
       setState(() {
         transactions = [];
         detailedTransactions = {};
+        totalExpenses = 0;
+        totalIncome = 0;
         isLoading = false;
       });
+      Fluttertoast.showToast(
+        msg: "No expenses found for this period.",
+        backgroundColor: Colors.black87,
+        textColor: Colors.white,
+        gravity: ToastGravity.CENTER,
+      );
       return;
     }
 
     Map<String, double> categoryTotals = {};
     Map<String, List<Map<String, dynamic>>> categoryDetails = {};
+    double currentTotalExpenses = 0;
+    double currentTotalIncome = 0;
 
     for (var doc in docs) {
       final data = doc.data();
@@ -162,9 +164,17 @@ class _RecordPageState extends State<RecordPage> {
       double amount = (data['Amount'] as num).toDouble();
       String message = data['Message'] ?? '';
       DateTime date = (data['Date'] as Timestamp).toDate();
+      String type = data['Type'] ?? 'Expense'; // Assuming you have a 'Type' field
 
       // Update category totals
       categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
+
+      // Calculate total expenses and income for the period
+      if (type == 'Expense') {
+        currentTotalExpenses += amount;
+      } else if (type == 'Income') {
+        currentTotalIncome += amount;
+      }
 
       // Add to detailed transactions
       if (!categoryDetails.containsKey(category)) {
@@ -175,6 +185,7 @@ class _RecordPageState extends State<RecordPage> {
         'message': message,
         'date': date,
         'id': doc.id,
+        'type': type, // Include type in detailed transaction
       });
     }
 
@@ -187,33 +198,35 @@ class _RecordPageState extends State<RecordPage> {
       transactions = categoryTotals.entries.map((entry) {
         return {
           'label': entry.key,
-          'amount': entry.value,
+          'amount': entry.value, // This is the total for the category in the period
           'icon': categoryIcons[entry.key] ?? 'others.png',
         };
       }).toList();
       detailedTransactions = categoryDetails;
+      totalExpenses = currentTotalExpenses;
+      totalIncome = currentTotalIncome;
       isLoading = false;
     });
   }
 
   void fetchThisWeek() {
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final endOfWeek = startOfWeek.add(Duration(days: 6));
+    final startOfWeek = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+    final endOfWeek = DateTime(now.year, now.month, now.day + (7 - now.weekday), 23, 59, 59);
     fetchExpensesInRange(startOfWeek, endOfWeek);
   }
 
   void fetchThisMonth() {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
     fetchExpensesInRange(startOfMonth, endOfMonth);
   }
 
   void fetchThisYear() {
     final now = DateTime.now();
     final startOfYear = DateTime(now.year, 1, 1);
-    final endOfYear = DateTime(now.year, 12, 31);
+    final endOfYear = DateTime(now.year, 12, 31, 23, 59, 59);
     fetchExpensesInRange(startOfYear, endOfYear);
   }
 
@@ -222,6 +235,7 @@ class _RecordPageState extends State<RecordPage> {
     if (user != null) {
       setState(() {
         isLoading = true;
+        expandedStates = {};
       });
 
       try {
@@ -230,48 +244,8 @@ class _RecordPageState extends State<RecordPage> {
             .where('Id', isEqualTo: user.uid)
             .get();
 
-        Map<String, double> categoryTotals = {};
-        Map<String, List<Map<String, dynamic>>> categoryDetails = {};
+        _processAndSetTransactions(snapshot.docs);
 
-        for (var doc in snapshot.docs) {
-          final data = doc.data();
-          String category = data['Category'];
-          double amount = (data['Amount'] as num).toDouble();
-          String message = data['Message'] ?? '';
-          DateTime date = (data['Date'] as Timestamp).toDate();
-
-          // Update category totals
-          categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
-
-          // Add to detailed transactions
-          if (!categoryDetails.containsKey(category)) {
-            categoryDetails[category] = [];
-          }
-          categoryDetails[category]!.add({
-            'amount': amount,
-            'message': message,
-            'date': date,
-            'id': doc.id,
-          });
-          totalExpenses = totalExpenses + data['Amount'];
-        }
-
-        // Sort detailed transactions by date (newest first)
-        categoryDetails.forEach((category, transactions) {
-          transactions.sort((a, b) => b['date'].compareTo(a['date']));
-        });
-
-        setState(() {
-          transactions = categoryTotals.entries.map((entry) {
-            return {
-              'label': entry.key,
-              'amount': entry.value,
-              'icon': categoryIcons[entry.key] ?? 'others.png',
-            };
-          }).toList();
-          detailedTransactions = categoryDetails;
-          isLoading = false;
-        });
       } catch (e) {
         print("Error fetching expenses: $e");
         setState(() {
@@ -306,7 +280,7 @@ class _RecordPageState extends State<RecordPage> {
         fetchThisMonth();
         break;
       case 'this_year':
-        fetchThisMonth();
+        fetchThisYear();
         break;
       case 'custom':
         DateTime? startDate = await showDatePicker(
@@ -320,7 +294,7 @@ class _RecordPageState extends State<RecordPage> {
           DateTime? endDate = await showDatePicker(
             context: context,
             initialDate: startDate,
-            firstDate: startDate,
+            firstDate: startDate, // End date cannot be before start date
             lastDate: DateTime.now(),
           );
 
@@ -469,7 +443,7 @@ class _RecordPageState extends State<RecordPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Total Expenses',
+                              'Total Expenses ',
                               style: TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
@@ -488,37 +462,7 @@ class _RecordPageState extends State<RecordPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Total Income',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '₹${totalIncome.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+
                   ],
                 ),
               ],
@@ -540,7 +484,7 @@ class _RecordPageState extends State<RecordPage> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No transactions found',
+                              'No transactions found for this period.',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 16,
@@ -609,7 +553,7 @@ class _RecordPageState extends State<RecordPage> {
                                           ),
                                         ),
                                         Text(
-                                          '-₹${tx["amount"].toStringAsFixed(2)}',
+                                          '₹${tx["amount"].toStringAsFixed(2)}',
                                           style: TextStyle(
                                             color: tx["amount"] > 0 ? Colors.red : Colors.green,
                                             fontWeight: FontWeight.bold,
@@ -656,7 +600,9 @@ class _RecordPageState extends State<RecordPage> {
                                                 children: [
                                                   Expanded(
                                                     child: Text(
-                                                      transaction['message']?.trim().isNotEmpty == true ? transaction['message'] : '---',
+                                                      transaction['message']?.trim().isNotEmpty == true
+                                                          ? transaction['message']
+                                                          : '---',
                                                       style: const TextStyle(
                                                         fontWeight: FontWeight.w500,
                                                         fontSize: 14,
@@ -664,7 +610,7 @@ class _RecordPageState extends State<RecordPage> {
                                                     ),
                                                   ),
                                                   Text(
-                                                    '-₹${transaction['amount'].toStringAsFixed(2)}',
+                                                    '₹${transaction['amount'].toStringAsFixed(2)}',
                                                     style: const TextStyle(
                                                       color: Colors.red,
                                                       fontWeight: FontWeight.bold,
@@ -737,7 +683,7 @@ class _RecordPageState extends State<RecordPage> {
                   context,
                   MaterialPageRoute(builder: (context) => AddExpense()),
                 );
-                _selectedIndex = 0;
+                _selectedIndex = 0; // Stay on Records tab after adding expense
                 break;
               case 3:
                 Navigator.pushReplacement(
@@ -750,7 +696,7 @@ class _RecordPageState extends State<RecordPage> {
                   context,
                   MaterialPageRoute(builder: (context) => ProfilePage()),
                 );
-                _selectedIndex = 0;
+                _selectedIndex = 0; // Stay on Records tab after viewing profile
                 break;
             }
           },
