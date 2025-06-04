@@ -3,7 +3,11 @@ import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:SmartSpend/screens/BudgetsPage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 
 class RecordPage extends StatefulWidget {
   const RecordPage({super.key});
@@ -15,56 +19,311 @@ class RecordPage extends StatefulWidget {
 class _RecordPageState extends State<RecordPage> {
   int _selectedIndex = 0;
 
-  final List<Map<String, dynamic>> transactions = [
-    {'label': 'Beauty', 'icon': 'beauty.png', 'amount': -100},
-    {'label': 'Children', 'icon': 'children.png', 'amount': -50},
-    {'label': 'Clothing', 'icon': 'clothing.png', 'amount': -150},
-    {'label': 'Donation', 'icon': 'donation.png', 'amount': -200},
-    {'label': 'Education', 'icon': 'education.png', 'amount': -80},
-    {'label': 'Entertainment', 'icon': 'entertainment.png', 'amount': -60},
-    {'label': 'Fees', 'icon': 'fees.png', 'amount': -90},
-    {'label': 'Food', 'icon': 'food.png', 'amount': -120},
-    {'label': 'Friends', 'icon': 'friends.png', 'amount': -70},
-    {'label': 'Gifts', 'icon': 'gifts.png', 'amount': -40},
-    {'label': 'Grocery', 'icon': 'grocery.png', 'amount': -300},
-    {'label': 'Gym', 'icon': 'gym.png', 'amount': -110},
-    {'label': 'Health', 'icon': 'health.png', 'amount': -130},
-    {'label': 'Homedecor', 'icon': 'homedecor.png', 'amount': -90},
-    {'label': 'Investments', 'icon': 'homedecor.png', 'amount': 11000},
-    {'label': 'Movie', 'icon': 'movie.png', 'amount': -70},
-    {'label': 'Party', 'icon': 'party.png', 'amount': -150},
-    {'label': 'Pet', 'icon': 'pet.png', 'amount': -60},
-    {'label': 'Petrol', 'icon': 'petrol.png', 'amount': -100},
-    {'label': 'Recharge', 'icon': 'recharge.png', 'amount': -50},
-    {'label': 'Repairing', 'icon': 'repair.png', 'amount': -200},
-    {'label': 'Shopping', 'icon': 'shopping.png', 'amount': -250},
-    {'label': 'Social', 'icon': 'social.png', 'amount': -30},
-    {'label': 'Snacks', 'icon': 'snacks.png', 'amount': -40},
-    {'label': 'Sports', 'icon': 'sport.png', 'amount': -60},
-    {'label': 'Transport', 'icon': 'transportation.png', 'amount': -70},
-    {'label': 'Travel', 'icon': 'travel.png', 'amount': -500},
-    {'label': 'Others', 'icon': 'others.png', 'amount': -20},
-  ];
+  Map<String, String> categoryIcons = {
+    'Beauty': 'beauty.png',
+    'Birthday': 'birthday.png',
+    'Children': 'children.png',
+    'Clothing': 'clothing.png',
+    'Donation': 'donation.png',
+    'Education': 'education.png',
+    'Entertainment': 'entertainment.png',
+    'Fees': 'fees.png',
+    'Food': 'food.png',
+    'Friends': 'friends.png',
+    'Gifts': 'gifts.png',
+    'Grocery': 'grocery.png',
+    'Gym': 'gym.png',
+    'Health': 'health.png',
+    'Homedecor': 'homedecor.png',
+    'Investments': 'homedecor.png',
+    'Movie': 'movie.png',
+    'Party': 'party.png',
+    'Pet': 'pet.png',
+    'Petrol': 'petrol.png',
+    'Recharge': 'recharge.png',
+    'Repairing': 'repair.png',
+    'Shopping': 'shopping.png',
+    'Social': 'social.png',
+    'Snacks': 'snacks.png',
+    'Sports': 'sport.png',
+    'Transport': 'transportation.png',
+    'Travel': 'travel.png',
+    'Others': 'others.png',
+  };
 
-  void _onMenuSelected(String value) {
+  List<Map<String, dynamic>> transactions = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchExpensesByCategory();
+  }
+
+  Future<void> fetchExpensesByDate(DateTime date) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final formattedDate = DateFormat('yyyy-MM-dd').format(date);
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Expenses')
+          .where('Id', isEqualTo: user.uid)
+          .get();
+
+      final filteredDocs = snapshot.docs.where((doc) {
+        final data = doc.data();
+        final Timestamp timestamp = data['Date'];
+        final DateTime docDate = timestamp.toDate();
+
+        return docDate.year == date.year &&
+            docDate.month == date.month &&
+            docDate.day == date.day;
+      }).toList();
+
+
+      if (filteredDocs.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "No expenses on this date.",
+          backgroundColor: Colors.black87,
+          textColor: Colors.white,
+          gravity: ToastGravity.CENTER,
+        );
+        setState(() {
+          transactions = [];
+          isLoading = false;
+        });
+        return;
+      }
+
+      Map<String, double> categoryTotals = {};
+
+      for (var doc in filteredDocs) {
+        final data = doc.data();
+        String category = data['Category'];
+        double amount = (data['Amount'] as num).toDouble();
+
+        if (categoryTotals.containsKey(category)) {
+          categoryTotals[category] = categoryTotals[category]! + amount;
+        } else {
+          categoryTotals[category] = amount;
+        }
+      }
+
+      setState(() {
+        transactions = categoryTotals.entries.map((entry) {
+          return {
+            'label': entry.key,
+            'amount': entry.value,
+            'icon': categoryIcons[entry.key] ?? 'others.png',
+          };
+        }).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching expenses: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+
+  Future<void> fetchExpensesInRange(DateTime start, DateTime end) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Expenses')
+          .where('Id', isEqualTo: user.uid)
+          .get();
+
+      final startDateTime = DateTime(start.year, start.month, start.day);
+      final endDateTime = DateTime(end.year, end.month, end.day, 23, 59, 59);
+
+      final filteredDocs = snapshot.docs.where((doc) {
+        final data = doc.data();
+        final Timestamp timestamp = data['Date'];
+        final DateTime docDate = timestamp.toDate();
+
+        return (docDate.isAtSameMomentAs(startDateTime) ||
+            (docDate.isAfter(startDateTime) && docDate.isBefore(endDateTime)) ||
+            docDate.isAtSameMomentAs(endDateTime));
+      }).toList();
+
+
+      _processAndSetTransactions(filteredDocs);
+    } catch (e) {
+      print("Error fetching expenses in range: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _processAndSetTransactions(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+    if (docs.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "No expenses in this period.",
+        backgroundColor: Colors.black87,
+        textColor: Colors.white,
+        gravity: ToastGravity.CENTER,
+      );
+      setState(() {
+        transactions = [];
+        isLoading = false;
+      });
+      return;
+    }
+
+    Map<String, double> categoryTotals = {};
+
+    for (var doc in docs) {
+      final data = doc.data();
+      String category = data['Category'];
+      double amount = (data['Amount'] as num).toDouble();
+
+      categoryTotals[category] = (categoryTotals[category] ?? 0) + amount;
+    }
+
+    setState(() {
+      transactions = categoryTotals.entries.map((entry) {
+        return {
+          'label': entry.key,
+          'amount': entry.value,
+          'icon': categoryIcons[entry.key] ?? 'others.png',
+        };
+      }).toList();
+      isLoading = false;
+    });
+  }
+
+  void fetchThisWeek() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(Duration(days: 6));
+    fetchExpensesInRange(startOfWeek, endOfWeek);
+  }
+
+  void fetchThisMonth() {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    fetchExpensesInRange(startOfMonth, endOfMonth);
+  }
+
+  void fetchThisYear() {
+    final now = DateTime.now();
+    final startOfYear = DateTime(now.year, 1, 1);
+    final endOfYear = DateTime(now.year, 12, 31);
+    fetchExpensesInRange(startOfYear, endOfYear);
+  }
+
+  Future<void> fetchExpensesByCategory() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Expenses')
+          .where('Id', isEqualTo: user.uid)
+          .get();
+
+      Map<String, double> categoryTotals = {};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        String category = data['Category'];
+        double amount = (data['Amount'] as num).toDouble();
+
+        if (categoryTotals.containsKey(category)) {
+          categoryTotals[category] = categoryTotals[category]! + amount;
+        } else {
+          categoryTotals[category] = amount;
+        }
+      }
+
+      setState(() {
+        transactions = categoryTotals.entries.map((entry) {
+          return {
+            'label': entry.key,
+            'amount': entry.value,
+            'icon': categoryIcons[entry.key] ?? 'others.png',
+          };
+        }).toList();
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _onMenuSelected(String value) async {
     switch (value) {
       case 'today':
-      // handle today
+        final today = DateTime.now();
+        fetchExpensesByDate(today);
         break;
+
       case 'select_date':
-      // handle date picker
+        DateTime? picked = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now(),
+        );
+        if (picked != null) {
+          fetchExpensesByDate(picked);
+        }
         break;
       case 'this_week':
-      // handle this week
+        fetchThisWeek();
         break;
       case 'this_month':
-      // handle this month
+        fetchThisMonth();
         break;
       case 'this_year':
-      // handle this year
+        fetchThisMonth();
         break;
       case 'custom':
-      // handle custom range
+        DateTime? startDate = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now(),
+        );
+
+        if (startDate != null) {
+          DateTime? endDate = await showDatePicker(
+            context: context,
+            initialDate: startDate,
+            firstDate: startDate,
+            lastDate: DateTime.now(),
+          );
+
+          if (endDate != null) {
+            fetchExpensesInRange(startDate, endDate);
+          } else {
+            Fluttertoast.showToast(
+              msg: "End date not selected.",
+              backgroundColor: Colors.black87,
+              textColor: Colors.white,
+              gravity: ToastGravity.CENTER,
+            );
+          }
+        } else {
+          Fluttertoast.showToast(
+            msg: "Start date not selected.",
+            backgroundColor: Colors.black87,
+            textColor: Colors.white,
+            gravity: ToastGravity.CENTER,
+          );
+        }
         break;
     }
   }
@@ -99,7 +358,9 @@ class _RecordPageState extends State<RecordPage> {
           ),
         ],
       ),
-      body: ListView.builder(
+      body: isLoading
+          ? Center(child: CircularProgressIndicator(color: primary_color))
+          : ListView.builder(
         itemCount: transactions.length,
         itemBuilder: (context, index) {
           final tx = transactions[index];
@@ -114,11 +375,14 @@ class _RecordPageState extends State<RecordPage> {
                 ),
               ),
             ),
-            title: Text(tx["label"], style: const TextStyle(fontWeight: FontWeight.w600)),
+            title: Text(
+              tx["label"],
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             trailing: Text(
-              '${tx["amount"] > 0 ? "+" : ""}${tx["amount"].toString()}',
+              '${tx["amount"] > 0 ? "-" : ""}${tx["amount"].toStringAsFixed(2)}',
               style: TextStyle(
-                color: tx["amount"] > 0 ? Colors.green : Colors.red,
+                color: tx["amount"] > 0 ? Colors.red : Colors.green,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -126,6 +390,7 @@ class _RecordPageState extends State<RecordPage> {
           );
         },
       ),
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
