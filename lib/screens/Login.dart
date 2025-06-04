@@ -40,7 +40,7 @@ class _LoginState extends State<Login> {
 
         if (existingUser.docs.isEmpty) {
           // If user doesn't exist, add them
-          await firestore.collection('Users').add({
+          await firestore.collection('Users').doc(user.uid).set({
             'Name': user.displayName,
             'Email': user.email,
             'Gender': null,

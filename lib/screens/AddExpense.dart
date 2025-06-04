@@ -1,5 +1,9 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:SmartSpend/screens/ViewExpenses.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class AddExpense extends StatefulWidget {
   const AddExpense({super.key});
@@ -9,8 +13,12 @@ class AddExpense extends StatefulWidget {
 }
 
 class _AddExpenseState extends State<AddExpense> {
+
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? "unknownUser";
+
   final List<Map<String, String>> categories = [
     {'label': 'Beauty', 'icon': 'beauty.png'},
+    {'label': 'Birthday', 'icon': 'birthday.png'},
     {'label': 'Children', 'icon': 'children.png'},
     {'label': 'Clothing', 'icon': 'clothing.png'},
     {'label': 'Donation', 'icon': 'donation.png'},
@@ -86,8 +94,18 @@ class _AddExpenseState extends State<AddExpense> {
                   ),
                 );
               }
+              else if (value == 'view_expense') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ViewExpensePage()),
+                );
+              }
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'view_expense',
+                child: Text('View all expenses'),
+              ),
               PopupMenuItem(
                 value: 'add_category',
                 child: Text('Add New Category'),
@@ -147,6 +165,36 @@ class _AddExpenseState extends State<AddExpense> {
     );
   }
 
+  Future<void> addExpenseToFirestore({
+    required String userId,
+    required String category,
+    required double amount,
+    String? message,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('Expenses').add({
+        'Id': userId,
+        'Category': category,
+        'Amount': amount,
+        'Message': message ?? "",
+        'Date': Timestamp.now(),
+      });
+
+      Fluttertoast.showToast(
+        msg: "Expense added successfully!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+    } catch (e) {
+      print("Error adding expense: $e");
+      Fluttertoast.showToast(
+        msg: "Failed to add expense",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+    }
+  }
+
   void _showExpenseDialog(BuildContext context, String category) {
     final amountController = TextEditingController();
     final memoController = TextEditingController();
@@ -167,7 +215,7 @@ class _AddExpenseState extends State<AddExpense> {
                 TextField(
                   controller: memoController,
                   decoration: InputDecoration(
-                    labelText: "Enter Memo (optional)",
+                    labelText: "Enter Message (optional)",
                   ),
                 ),
               ],
@@ -179,12 +227,25 @@ class _AddExpenseState extends State<AddExpense> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  final amount = amountController.text;
-                  final memo = memoController.text;
-                  print("Category: $category, Amount: $amount, Memo: $memo");
+                  final amount = double.tryParse(amountController.text) ?? 0.0;
+                  final memo = memoController.text.isNotEmpty ? memoController.text : null;
 
-                  // TODO: Save this to your DB or state
-                  Navigator.pop(context);
+                  if (amount > 0) {
+                    addExpenseToFirestore(
+                      userId: userId,  // replace with your auth userId
+                      category: category,
+                      amount: amount,
+                      message: memo,
+                    );
+
+                    Navigator.pop(context);
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: "Please enter a valid amount",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                    );
+                  }
                 },
                 child: Text("Save"),
               ),
