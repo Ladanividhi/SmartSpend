@@ -21,12 +21,6 @@ class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0; // Default index, but won't show as selected
   User? user;
 
-  signout() async {
-    await GoogleSignIn().signOut();
-    await FirebaseAuth.instance.signOut();
-
-  }
-
   @override
   void initState() {
     super.initState();
@@ -79,43 +73,30 @@ class _DashboardState extends State<Dashboard> {
                             context,
                             MaterialPageRoute(builder: (context) => SettingsPage()),
                           );
-                        } else if (value == 'logout') {
-                          signout();
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => Login()),
-                          );
+                        } else if (value == 'budgets') {
+                          //budgets code here
+
                         }
                       },
                       itemBuilder: (BuildContext context) => [
                         PopupMenuItem(
                           value: 'budgets',
-                          child: Text(
-                            'Set Budget',
-                            style: TextStyle(
-                              color: text_color,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.monetization_on_rounded, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Set Budget'),
+                            ],
                           ),
                         ),
                         PopupMenuItem(
                           value: 'settings',
-                          child: Text(
-                            'Settings',
-                            style: TextStyle(
-                              color: text_color,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'logout',
-                          child: Text(
-                            'Logout',
-                            style: TextStyle(
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.settings, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Settings'),
+                            ],
                           ),
                         ),
                       ],

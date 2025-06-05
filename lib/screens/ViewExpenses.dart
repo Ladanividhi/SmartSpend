@@ -102,7 +102,13 @@ class _ViewExpensePageState extends State<ViewExpensePage> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'edit_expense',
-                child: Text('Edit expenses'),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Edit Expenses'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -150,7 +156,7 @@ class _ViewExpensePageState extends State<ViewExpensePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            DateFormat('MMMM d, yyyy').format(expense['date']),
+                            DateFormat('MMMM d, yyyy | HH:mm').format(expense['date']),
                             style: const TextStyle(
                               fontSize: 13,
                               color: Colors.grey,

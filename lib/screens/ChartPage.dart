@@ -85,6 +85,10 @@ class _ChartPageState extends State<ChartPage> {
   };
 
   List<Map<String, dynamic>> transactions = [];
+  int a = 0;
+  String date = '';
+  String start = '';
+  String end = '';
 
   @override
   void initState() {
@@ -103,20 +107,22 @@ class _ChartPageState extends State<ChartPage> {
     });
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Expenses')
-          .where('Id', isEqualTo: user.uid)
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('Expenses')
+              .where('Id', isEqualTo: user.uid)
+              .get();
 
-      final filteredDocs = snapshot.docs.where((doc) {
-        final data = doc.data();
-        final Timestamp timestamp = data['Date'];
-        final DateTime docDate = timestamp.toDate();
+      final filteredDocs =
+          snapshot.docs.where((doc) {
+            final data = doc.data();
+            final Timestamp timestamp = data['Date'];
+            final DateTime docDate = timestamp.toDate();
 
-        return docDate.year == date.year &&
-            docDate.month == date.month &&
-            docDate.day == date.day;
-      }).toList();
+            return docDate.year == date.year &&
+                docDate.month == date.month &&
+                docDate.day == date.day;
+          }).toList();
 
       _processAndSetTransactions(filteredDocs);
     } catch (e) {
@@ -138,24 +144,26 @@ class _ChartPageState extends State<ChartPage> {
     });
 
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Expenses')
-          .where('Id', isEqualTo: user.uid)
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('Expenses')
+              .where('Id', isEqualTo: user.uid)
+              .get();
 
       final startDateTime = DateTime(start.year, start.month, start.day);
       final endDateTime = DateTime(end.year, end.month, end.day, 23, 59, 59);
 
-      final filteredDocs = snapshot.docs.where((doc) {
-        final data = doc.data();
-        final Timestamp timestamp = data['Date'];
-        final DateTime docDate = timestamp.toDate();
+      final filteredDocs =
+          snapshot.docs.where((doc) {
+            final data = doc.data();
+            final Timestamp timestamp = data['Date'];
+            final DateTime docDate = timestamp.toDate();
 
-        return (docDate.isAtSameMomentAs(startDateTime) ||
-            (docDate.isAfter(startDateTime) && docDate.isBefore(endDateTime)) ||
-            docDate.isAtSameMomentAs(endDateTime));
-      }).toList();
-
+            return (docDate.isAtSameMomentAs(startDateTime) ||
+                (docDate.isAfter(startDateTime) &&
+                    docDate.isBefore(endDateTime)) ||
+                docDate.isAtSameMomentAs(endDateTime));
+          }).toList();
 
       _processAndSetTransactions(filteredDocs);
     } catch (e) {
@@ -166,7 +174,9 @@ class _ChartPageState extends State<ChartPage> {
     }
   }
 
-  void _processAndSetTransactions(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+  void _processAndSetTransactions(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
     if (docs.isEmpty) {
       setState(() {
         transactions = [];
@@ -211,7 +221,10 @@ class _ChartPageState extends State<ChartPage> {
     setState(() {
       this.categoryTotals = categoryTotals;
       detailedTransactions = categoryDetails;
-      totalExpenses = categoryTotals.values.fold(0, (sum, amount) => sum + amount);
+      totalExpenses = categoryTotals.values.fold(
+        0,
+        (sum, amount) => sum + amount,
+      );
       isLoading = false;
     });
   }
@@ -247,10 +260,11 @@ class _ChartPageState extends State<ChartPage> {
       });
 
       try {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('Expenses')
-            .where('Id', isEqualTo: user.uid)
-            .get();
+        final snapshot =
+            await FirebaseFirestore.instance
+                .collection('Expenses')
+                .where('Id', isEqualTo: user.uid)
+                .get();
 
         Map<String, double> totals = {};
         Map<String, List<Map<String, dynamic>>> details = {};
@@ -298,11 +312,14 @@ class _ChartPageState extends State<ChartPage> {
   Future<void> _onMenuSelected(String value) async {
     switch (value) {
       case 'today':
+        a = 1;
         final today = DateTime.now();
+        date = 'Today';
         fetchExpensesByDate(today);
         break;
 
       case 'select_date':
+        a = 2;
         DateTime? picked = await showDatePicker(
           context: context,
           initialDate: DateTime.now(),
@@ -310,19 +327,25 @@ class _ChartPageState extends State<ChartPage> {
           lastDate: DateTime.now(),
         );
         if (picked != null) {
+          final DateFormat formatter = DateFormat('MMM d, yyyy');
+          date = formatter.format(picked);
           fetchExpensesByDate(picked);
         }
         break;
       case 'this_week':
+        a = 3;
         fetchThisWeek();
         break;
       case 'this_month':
+        a = 4;
         fetchThisMonth();
         break;
       case 'this_year':
+        a = 5;
         fetchThisYear();
         break;
       case 'custom':
+        a = 6;
         DateTime? startDate = await showDatePicker(
           context: context,
           initialDate: DateTime.now(),
@@ -339,6 +362,9 @@ class _ChartPageState extends State<ChartPage> {
           );
 
           if (endDate != null) {
+            final DateFormat formatter = DateFormat('MMM d, yyyy');
+            start = formatter.format(startDate);
+            end = formatter.format(endDate);
             fetchExpensesInRange(startDate, endDate);
           } else {
             Fluttertoast.showToast(
@@ -400,335 +426,407 @@ class _ChartPageState extends State<ChartPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   onSelected: _onMenuSelected,
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'today',
-                      child: Row(
-                        children: [
-                          Icon(Icons.today, color: primary_color),
-                          const SizedBox(width: 12),
-                          const Text('Today'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'select_date',
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: primary_color),
-                          const SizedBox(width: 12),
-                          const Text('Select Date'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'this_week',
-                      child: Row(
-                        children: [
-                          Icon(Icons.date_range, color: primary_color),
-                          const SizedBox(width: 12),
-                          const Text('This Week'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'this_month',
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_month, color: primary_color),
-                          const SizedBox(width: 12),
-                          const Text('This Month'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'this_year',
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_view_month, color: primary_color),
-                          const SizedBox(width: 12),
-                          const Text('This Year'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'custom',
-                      child: Row(
-                        children: [
-                          Icon(Icons.date_range_outlined, color: primary_color),
-                          const SizedBox(width: 12),
-                          const Text('Customize Range'),
-                        ],
-                      ),
-                    ),
-                  ],
+                  itemBuilder:
+                      (context) => [
+                        PopupMenuItem(
+                          value: 'today',
+                          child: Row(
+                            children: [
+                              Icon(Icons.today, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Today'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'select_date',
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('Select Date'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'this_week',
+                          child: Row(
+                            children: [
+                              Icon(Icons.date_range, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('This Week'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'this_month',
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_month, color: primary_color),
+                              const SizedBox(width: 12),
+                              const Text('This Month'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'this_year',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_view_month,
+                                color: primary_color,
+                              ),
+                              const SizedBox(width: 12),
+                              const Text('This Year'),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'custom',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.date_range_outlined,
+                                color: primary_color,
+                              ),
+                              const SizedBox(width: 12),
+                              const Text('Customize Range'),
+                            ],
+                          ),
+                        ),
+                      ],
                 ),
               ],
             ),
           ),
           // Main content area
           Expanded(
-            child: isLoading
-                ? Center(child: CircularProgressIndicator(color: primary_color))
-                : categoryTotals.isEmpty
+            child:
+                isLoading
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.pie_chart_outline,
-                              size: 64,
-                              color: Colors.grey[400],
+                      child: CircularProgressIndicator(color: primary_color),
+                    )
+                    : categoryTotals.isEmpty
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.pie_chart_outline,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No expenses found for this period.',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No expenses found for this period.',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                          ),
+                        ],
+                      ),
+                    )
                     : SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Total Expenses Summary Card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Total Expenses',
-                                    style: TextStyle(
-                                      color: Colors.black54,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '₹${totalExpenses.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: primary_color,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Total Expenses Summary Card
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 24),
-                            // Chart and Legend Card
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  a == 1
+                                      ? 'Total Expenses Today'
+                                      : a == 2
+                                      ? 'Total Expenses on $date'
+                                      : a == 3
+                                      ? 'Total Expenses This Week'
+                                      : a == 4
+                                      ? 'Total Expenses This Month'
+                                      : a == 5
+                                      ? 'Total Expenses This Year'
+                                      : a == 6
+                                      ? 'Total Expenses from $start to $end'
+                                      : 'Total Expenses Till Now',
+                                  style: const TextStyle(
+                                    color: primary_color,
+                                    fontSize: 14,
                                   ),
-                                ],
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Pie Chart with Total
-                                  Expanded(
-                                    flex: 2,
-                                    child: SizedBox(
-                                      height: 220, // Increased height for the chart
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          PieChart(
-                                            PieChartData(
-                                              sections: _createPieChartSections(),
-                                              centerSpaceRadius: 40, // Make it a donut chart
-                                              sectionsSpace: 2,
-                                              startDegreeOffset: 270, // Start from top
-                                            ),
-                                          ),
-                                          Text(
-                                            '₹${totalExpenses.toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                              color: text_color,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '₹${totalExpenses.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: primary_color,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(width: 16),
-                                  // Legend
-                                  Expanded(
-                                    flex: 1,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: categoryTotals.entries.map((entry) {
-                                        final color = categoryColors[categoryTotals.keys.toList().indexOf(entry.key) % categoryColors.length];
-                                        final percentage = totalExpenses > 0 ? (entry.value / totalExpenses * 100).toStringAsFixed(1) : '0.0';
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 2.0), // Adjusted vertical padding
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 8, // Slightly reduced dot size
-                                                height: 8, // Slightly reduced dot size
-                                                decoration: BoxDecoration(
-                                                  color: color,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6), // Slightly reduced spacing
-                                              Expanded(
-                                                child: Text(
-                                                  entry.key,
-                                                  style: TextStyle(color: text_color.withOpacity(0.7), fontSize: 11), // Reduced font size
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              Text(
-                                                '$percentage%',
-                                                style: TextStyle(color: text_color, fontSize: 11), // Reduced font size
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 24),
-                            // Category List with Progress
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(), // Disable listview's own scrolling
-                              itemCount: categoryTotals.length,
-                              itemBuilder: (context, index) {
-                                final entry = categoryTotals.entries.elementAt(index);
-                                final category = entry.key;
-                                final totalAmount = entry.value;
-                                final percentage = totalExpenses > 0 ? (totalAmount / totalExpenses * 100).toStringAsFixed(1) : '0.0';
-
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                          ),
+                          const SizedBox(height: 24),
+                          // Chart and Legend Card
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Pie Chart with Total
+                                Expanded(
+                                  flex: 2,
+                                  child: SizedBox(
+                                    height:
+                                        220, // Increased height for the chart
+                                    child: Stack(
+                                      alignment: Alignment.center,
                                       children: [
-                                        Row(
-                                          children: [
-                                            // Category Icon
-                                            Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: icons_shade.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Image.asset(
-                                                'assets/icons/${categoryIcons[category] ?? 'others.png'}',
-                                                width: 24,
-                                                height: 24,
-                                                fit: BoxFit.contain,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    category,
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.w600,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    '$percentage%',
-                                                    style: TextStyle(
-                                                      color: Colors.grey[600],
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  '₹${totalAmount.toStringAsFixed(2)}',
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                        PieChart(
+                                          PieChartData(
+                                            sections: _createPieChartSections(),
+                                            centerSpaceRadius:
+                                                40, // Make it a donut chart
+                                            sectionsSpace: 2,
+                                            startDegreeOffset:
+                                                270, // Start from top
+                                          ),
                                         ),
-                                        const SizedBox(height: 8),
-                                        // Progress Bar
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: LinearProgressIndicator(
-                                            value: totalExpenses > 0 ? totalAmount / totalExpenses : 0,
-                                            backgroundColor: Colors.grey.shade200,
-                                            valueColor: AlwaysStoppedAnimation<Color>
-                                                (categoryColors[categoryTotals.keys.toList().indexOf(category) % categoryColors.length]),
-                                            minHeight: 6,
+                                        Text(
+                                          '₹${totalExpenses.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: text_color,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                );
-                              },
+                                ),
+                                const SizedBox(width: 16),
+                                // Legend
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children:
+                                        categoryTotals.entries.map((entry) {
+                                          final color =
+                                              categoryColors[categoryTotals.keys
+                                                      .toList()
+                                                      .indexOf(entry.key) %
+                                                  categoryColors.length];
+                                          final percentage =
+                                              totalExpenses > 0
+                                                  ? (entry.value /
+                                                          totalExpenses *
+                                                          100)
+                                                      .toStringAsFixed(1)
+                                                  : '0.0';
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 2.0,
+                                            ), // Adjusted vertical padding
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width:
+                                                      8, // Slightly reduced dot size
+                                                  height:
+                                                      8, // Slightly reduced dot size
+                                                  decoration: BoxDecoration(
+                                                    color: color,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                                const SizedBox(
+                                                  width: 6,
+                                                ), // Slightly reduced spacing
+                                                Expanded(
+                                                  child: Text(
+                                                    entry.key,
+                                                    style: TextStyle(
+                                                      color: text_color
+                                                          .withOpacity(0.7),
+                                                      fontSize: 11,
+                                                    ), // Reduced font size
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '$percentage%',
+                                                  style: TextStyle(
+                                                    color: text_color,
+                                                    fontSize: 11,
+                                                  ), // Reduced font size
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 24),
+                          // Category List with Progress
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics:
+                                const NeverScrollableScrollPhysics(), // Disable listview's own scrolling
+                            itemCount: categoryTotals.length,
+                            itemBuilder: (context, index) {
+                              final entry = categoryTotals.entries.elementAt(
+                                index,
+                              );
+                              final category = entry.key;
+                              final totalAmount = entry.value;
+                              final percentage =
+                                  totalExpenses > 0
+                                      ? (totalAmount / totalExpenses * 100)
+                                          .toStringAsFixed(1)
+                                      : '0.0';
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          // Category Icon
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: icons_shade.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Image.asset(
+                                              'assets/icons/${categoryIcons[category] ?? 'others.png'}',
+                                              width: 24,
+                                              height: 24,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  category,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '$percentage%',
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                '₹${totalAmount.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      // Progress Bar
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: LinearProgressIndicator(
+                                          value:
+                                              totalExpenses > 0
+                                                  ? totalAmount / totalExpenses
+                                                  : 0,
+                                          backgroundColor: Colors.grey.shade200,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                categoryColors[categoryTotals
+                                                        .keys
+                                                        .toList()
+                                                        .indexOf(category) %
+                                                    categoryColors.length],
+                                              ),
+                                          minHeight: 6,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
+                    ),
           ),
         ],
       ),

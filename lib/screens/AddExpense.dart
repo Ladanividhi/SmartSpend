@@ -104,11 +104,23 @@ class _AddExpenseState extends State<AddExpense> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'view_expense',
-                child: Text('View all expenses'),
+                child: Row(
+                  children: [
+                    Icon(Icons.currency_rupee_sharp, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('View all Expenses'),
+                  ],
+                ),
               ),
               PopupMenuItem(
                 value: 'add_category',
-                child: Text('Add New Category'),
+                child: Row(
+                  children: [
+                    Icon(Icons.add_box, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Add new category'),
+                  ],
+                ),
               ),
             ],
           ),
