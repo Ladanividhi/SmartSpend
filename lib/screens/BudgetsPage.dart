@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:SmartSpend/Constants.dart';
 import 'package:intl/intl.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class BudgetsPage extends StatefulWidget {
   const BudgetsPage({super.key});
@@ -31,146 +32,276 @@ class _BudgetsPageState extends State<BudgetsPage> {
   }
 
   Future<void> loadActiveBudgets() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? "";
-    final now = DateTime.now();
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
-    QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
-        .collection('Budget')
-        .where('Id', isEqualTo: userId)
-        .get();
-
-    QuerySnapshot categoryBudgetSnapshot = await FirebaseFirestore.instance
-        .collection('CategoryBudget')
-        .where('Id', isEqualTo: userId)
-        .get();
-
-    List<Map<String, dynamic>> allBudgets = [];
-
-    for (var doc in budgetSnapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final start = (data['StartDate'] as Timestamp).toDate();
-      final end = (data['EndDate'] as Timestamp).toDate();
-      if (now.isAfter(start) && now.isBefore(end)) {
-        data['type'] = 'total';
-        allBudgets.add(data);
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        setState(() {
+          isLoading = false;
+          activeBudgets = [];
+        });
+        return;
       }
-    }
 
-    for (var doc in categoryBudgetSnapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final start = (data['StartDate'] as Timestamp).toDate();
-      final end = (data['EndDate'] as Timestamp).toDate();
-      if (now.isAfter(start) && now.isBefore(end)) {
-        data['type'] = 'category';
-        allBudgets.add(data);
+      final now = DateTime.now();
+
+      QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
+          .collection('Budget')
+          .where('Id', isEqualTo: userId)
+          .get();
+
+      QuerySnapshot categoryBudgetSnapshot = await FirebaseFirestore.instance
+          .collection('CategoryBudget')
+          .where('Id', isEqualTo: userId)
+          .get();
+
+      List<Map<String, dynamic>> allBudgets = [];
+
+      for (var doc in budgetSnapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['StartDate'] == null || data['EndDate'] == null || data['Amount'] == null) {
+            continue; // Skip invalid documents
+          }
+          
+          final start = (data['StartDate'] as Timestamp).toDate();
+          final end = (data['EndDate'] as Timestamp).toDate();
+          
+          if (now.isAfter(start) && now.isBefore(end)) {
+            data['type'] = 'total';
+            allBudgets.add(data);
+          }
+        } catch (e) {
+          print("Error processing budget document: $e");
+          continue; // Skip problematic documents
+        }
       }
-    }
 
-    setState(() {
-      activeBudgets = allBudgets;
-      isLoading = false;
-    });
+      for (var doc in categoryBudgetSnapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['StartDate'] == null || data['EndDate'] == null || data['Amount'] == null || data['Category'] == null) {
+            continue; // Skip invalid documents
+          }
+          
+          final start = (data['StartDate'] as Timestamp).toDate();
+          final end = (data['EndDate'] as Timestamp).toDate();
+          
+          if (now.isAfter(start) && now.isBefore(end)) {
+            data['type'] = 'category';
+            allBudgets.add(data);
+          }
+        } catch (e) {
+          print("Error processing category budget document: $e");
+          continue; // Skip problematic documents
+        }
+      }
+
+      setState(() {
+        activeBudgets = allBudgets;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error loading budgets: $e");
+      setState(() {
+        isLoading = false;
+        activeBudgets = [];
+      });
+      Fluttertoast.showToast(
+        msg: "Error loading budgets. Please try again.",
+        backgroundColor: Colors.black87,
+        textColor: Colors.white,
+        gravity: ToastGravity.CENTER,
+      );
+    }
   }
 
   Future<double> calculateSpent(String userId, DateTime start, DateTime end, [String? category]) async {
-    Query query = FirebaseFirestore.instance
-        .collection('Expenses')
-        .where('Id', isEqualTo: userId)
-        .where('Timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-        .where('Timestamp', isLessThanOrEqualTo: Timestamp.fromDate(end));
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('Expenses')
+          .where('Id', isEqualTo: userId);
 
-    if (category != null) {
-      query = query.where('Category', isEqualTo: category);
+      final snapshot = await query.get();
+      double totalSpent = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data == null) {
+          print('Skipping document with null data: ${doc.id}');
+          continue;
+        }
+
+        // Safely access and check Timestamp
+        final dynamic timestampData = data['Timestamp'];
+        if (timestampData == null || !(timestampData is Timestamp)) {
+          print('Skipping document with invalid or missing Timestamp: ${doc.id}');
+          continue;
+        }
+        final Timestamp timestamp = timestampData as Timestamp;
+        final docDate = timestamp.toDate();
+
+        // Safely access and check Type
+        final dynamic typeData = data['Type'];
+        final String? type = typeData is String ? typeData : null;
+        if (type != 'Expense') {
+          // Only process expense transactions for spent calculation
+          continue;
+        }
+
+        // Safely access Category
+        final dynamic categoryData = data['Category'];
+        final String? docCategory = categoryData is String ? categoryData : null;
+
+        // Filter by category if specified
+        if (category != null && docCategory != category) {
+           continue;
+        }
+
+        // Normalize budget period start and end to the beginning and end of the day
+        final startOfDay = DateTime(start.year, start.month, start.day);
+        final endOfDay = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+
+        // Filter by date range, including start and end dates
+        if (docDate.isAtSameMomentAs(startOfDay) ||
+            (docDate.isAfter(startOfDay) && docDate.isBefore(endOfDay)) ||
+            docDate.isAtSameMomentAs(endOfDay)) {
+
+          // Safely access and check Amount
+          final dynamic amountData = data['Amount'];
+          if (amountData == null || !(amountData is num)) {
+             print('Skipping document with invalid or missing Amount: ${doc.id}');
+             continue;
+          }
+          final double amount = (amountData as num).toDouble();
+
+          totalSpent += amount;
+        }
+      }
+
+      return totalSpent;
+    } catch (e) {
+      print("Error calculating spent amount: $e");
+      return 0.0;
     }
-
-    final snapshot = await query.get();
-    double totalSpent = 0;
-    for (var doc in snapshot.docs) {
-      totalSpent += (doc['Amount'] as num).toDouble();
-    }
-
-    return totalSpent;
   }
 
   Widget buildBudgetCard(Map<String, dynamic> budget) {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final formatter = DateFormat('dd MMM yyyy');
-    final start = (budget['StartDate'] as Timestamp).toDate();
-    final end = (budget['EndDate'] as Timestamp).toDate();
-    final daysLeft = end.difference(DateTime.now()).inDays;
-    final total = (budget['Amount'] as num).toDouble();
-    final isCategory = budget['type'] == 'category';
-    final category = budget['Category'] ?? '';
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final formatter = DateFormat('dd MMM yyyy');
+      
+      if (budget['StartDate'] == null || budget['EndDate'] == null || budget['Amount'] == null) {
+        return const SizedBox.shrink(); // Return empty widget if required data is missing
+      }
 
-    return FutureBuilder<double>(
-      future: calculateSpent(userId, start, end, isCategory ? category : null),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const LinearProgressIndicator();
+      final start = (budget['StartDate'] as Timestamp).toDate();
+      final end = (budget['EndDate'] as Timestamp).toDate();
+      final daysLeft = end.difference(DateTime.now()).inDays;
+      final total = (budget['Amount'] as num).toDouble();
+      final isCategory = budget['type'] == 'category';
+      final category = budget['Category'] ?? '';
 
-        final spent = snapshot.data!;
-        final remaining = (total - spent).clamp(0, total);
-        final percentUsed = (spent / total).clamp(0.0, 1.0);
-        final barColor = spent > total ? Colors.red : Colors.green;
-        final labelColor = spent > total ? Colors.red : Colors.black;
+      return FutureBuilder<double>(
+        future: calculateSpent(userId, start, end, isCategory ? category : null),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Card(
+              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
 
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: barColor.withOpacity(0.1),
-                      child: Icon(
-                        isCategory ? Icons.category : Icons.wallet,
-                        color: barColor,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        isCategory ? category : 'Total Budget',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+          if (snapshot.hasError) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Error loading budget: ${snapshot.error}'),
+              ),
+            );
+          }
+
+          final spent = snapshot.data ?? 0.0;
+          final remaining = (total - spent).clamp(0, total);
+          final percentUsed = (spent / total).clamp(0.0, 1.0);
+          final barColor = spent > total ? Colors.red : Colors.green;
+          final labelColor = spent > total ? Colors.red : Colors.black;
+
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: barColor.withOpacity(0.1),
+                        child: Icon(
+                          isCategory ? Icons.category : Icons.wallet,
+                          color: barColor,
                         ),
                       ),
-                    ),
-                    Text("(${DateFormat('MMM, yyyy').format(start)})"),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text("Limit: ₹${total.toStringAsFixed(2)}"),
-                Text("Spent: ₹${spent.toStringAsFixed(2)}",
-                    style: TextStyle(color: labelColor)),
-                Text("Remaining: ₹${remaining.toStringAsFixed(2)}",
-                    style: TextStyle(color: barColor)),
-                const SizedBox(height: 8),
-                LinearProgressIndicator(
-                  value: percentUsed,
-                  minHeight: 8,
-                  color: barColor,
-                  backgroundColor: Colors.grey.shade300,
-                ),
-                if (spent > total)
-                  const Align(
-                    alignment: Alignment.centerRight,
-                    child: Text("*Limit exceeded",
-                        style: TextStyle(color: Colors.red, fontSize: 12)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          isCategory ? category : 'Total Budget',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Text("(${DateFormat('MMM, yyyy').format(start)})"),
+                    ],
                   ),
-                const SizedBox(height: 8),
-                Text("From ${formatter.format(start)} to ${formatter.format(end)}"),
-                Text("Remaining Days: $daysLeft"),
-              ],
+                  const SizedBox(height: 8),
+                  Text("Limit: ₹${total.toStringAsFixed(2)}"),
+                  Text("Spent: ₹${spent.toStringAsFixed(2)}",
+                      style: TextStyle(color: labelColor)),
+                  Text("Remaining: ₹${remaining.toStringAsFixed(2)}",
+                      style: TextStyle(color: barColor)),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: percentUsed,
+                    minHeight: 8,
+                    color: barColor,
+                    backgroundColor: Colors.grey.shade300,
+                  ),
+                  if (spent > total)
+                    const Align(
+                      alignment: Alignment.centerRight,
+                      child: Text("*Limit exceeded",
+                          style: TextStyle(color: Colors.red, fontSize: 12)),
+                    ),
+                  const SizedBox(height: 8),
+                  Text("From ${formatter.format(start)} to ${formatter.format(end)}"),
+                  Text("Remaining Days: $daysLeft"),
+                ],
+              ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        },
+      );
+    } catch (e) {
+      print("Error building budget card: $e");
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text('Error displaying budget: $e'),
+        ),
+      );
+    }
   }
 
 
