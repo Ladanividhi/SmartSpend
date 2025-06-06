@@ -780,7 +780,11 @@ class _RecordPageState extends State<RecordPage> {
                         fetchExpensesByCategory();
                         break;
                       case 2:
-                        fetchExpensesByDate(date as DateTime);
+                        if (date.isNotEmpty) {
+                          final DateFormat formatter = DateFormat('MMM d, yyyy');
+                          final DateTime selectedDate = formatter.parse(date);
+                          fetchExpensesByDate(selectedDate);
+                        }
                         break;
                       case 3:
                         fetchThisWeek();
@@ -792,7 +796,12 @@ class _RecordPageState extends State<RecordPage> {
                         fetchThisYear();
                         break;
                       case 6:
-                        fetchExpensesInRange(start as DateTime, end as DateTime);
+                        if (start.isNotEmpty && end.isNotEmpty) {
+                          final DateFormat formatter = DateFormat('MMM d, yyyy');
+                          final DateTime startDate = formatter.parse(start);
+                          final DateTime endDate = formatter.parse(end);
+                          fetchExpensesInRange(startDate, endDate);
+                        }
                         break;
                       default:
                         fetchExpensesByDate(DateTime.now());

@@ -26,14 +26,14 @@ class _ChartPageState extends State<ChartPage> {
 
   // 24 distinct colors for categories
   final List<Color> categoryColors = [
-    const Color(0xFFE57373), // Red
-    const Color(0xFFF06292), // Pink
-    const Color(0xFFBA68C8), // Purple
     const Color(0xFF9575CD), // Deep Purple
     const Color(0xFF7986CB), // Indigo
     const Color(0xFF64B5F6), // Blue
     const Color(0xFF4FC3F7), // Light Blue
     const Color(0xFF4DD0E1), // Cyan
+    const Color(0xFFE57373), // Red
+    const Color(0xFFF06292), // Pink
+    const Color(0xFFBA68C8), // Purple
     const Color(0xFF4DB6AC), // Teal
     const Color(0xFF81C784), // Green
     const Color(0xFFAED581), // Light Green
@@ -93,7 +93,7 @@ class _ChartPageState extends State<ChartPage> {
   @override
   void initState() {
     super.initState();
-    fetchExpensesByCategory();
+    fetchExpensesByDate(DateTime.now());
   }
 
   Future<void> fetchExpensesByDate(DateTime date) async {
@@ -311,11 +311,9 @@ class _ChartPageState extends State<ChartPage> {
 
   Future<void> _onMenuSelected(String value) async {
     switch (value) {
-      case 'today':
+      case 'till_now':
         a = 1;
-        final today = DateTime.now();
-        date = 'Today';
-        fetchExpensesByDate(today);
+        fetchExpensesByCategory();
         break;
 
       case 'select_date':
@@ -429,12 +427,12 @@ class _ChartPageState extends State<ChartPage> {
                   itemBuilder:
                       (context) => [
                         PopupMenuItem(
-                          value: 'today',
+                          value: 'till_now',
                           child: Row(
                             children: [
-                              Icon(Icons.today, color: primary_color),
+                              Icon(Icons.timelapse_rounded, color: primary_color),
                               const SizedBox(width: 12),
-                              const Text('Today'),
+                              const Text('Till Now'),
                             ],
                           ),
                         ),
@@ -552,7 +550,7 @@ class _ChartPageState extends State<ChartPage> {
                               children: [
                                 Text(
                                   a == 1
-                                      ? 'Total Expenses Today'
+                                      ? 'Total Expenses Till Now'
                                       : a == 2
                                       ? 'Total Expenses on $date'
                                       : a == 3
@@ -563,7 +561,7 @@ class _ChartPageState extends State<ChartPage> {
                                       ? 'Total Expenses This Year'
                                       : a == 6
                                       ? 'Total Expenses from $start to $end'
-                                      : 'Total Expenses Till Now',
+                                      : 'Total Expenses Today',
                                   style: const TextStyle(
                                     color: primary_color,
                                     fontSize: 14,
@@ -612,7 +610,7 @@ class _ChartPageState extends State<ChartPage> {
                                           PieChartData(
                                             sections: _createPieChartSections(),
                                             centerSpaceRadius:
-                                                40, // Make it a donut chart
+                                                80, // Make it a donut chart
                                             sectionsSpace: 2,
                                             startDegreeOffset:
                                                 270, // Start from top
@@ -698,7 +696,7 @@ class _ChartPageState extends State<ChartPage> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          // const SizedBox(height: 24),
                           // Category List with Progress
                           ListView.builder(
                             shrinkWrap: true,
@@ -718,110 +716,133 @@ class _ChartPageState extends State<ChartPage> {
                                       : '0.0';
 
                               return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
+                                margin: const EdgeInsets.only(bottom: 10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white,
+                                      icons_shade.withOpacity(0.05),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: icons_shade.withOpacity(0.07),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      // Row Section
                                       Row(
                                         children: [
-                                          // Category Icon
+                                          // Icon Box
                                           Container(
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
-                                              color: icons_shade.withOpacity(
-                                                0.1,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
+                                              color: icons_shade.withOpacity(0.18),
+                                              borderRadius: BorderRadius.circular(12),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: icons_shade.withOpacity(0.08),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(2, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Image.asset(
                                               'assets/icons/${categoryIcons[category] ?? 'others.png'}',
                                               width: 24,
                                               height: 24,
-                                              fit: BoxFit.contain,
+                                              fit: BoxFit.cover,
                                             ),
                                           ),
+
                                           const SizedBox(width: 12),
+
+                                          // Category and Percentage
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   category,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 16,
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 14,
+                                                    color: Colors.grey.shade900,
                                                   ),
                                                 ),
-                                                const SizedBox(height: 4),
+                                                const SizedBox(height: 2),
                                                 Text(
-                                                  '$percentage%',
+                                                  '$percentage% used',
                                                   style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 12,
+                                                    color: Colors.grey.shade600,
+                                                    fontSize: 11,
+                                                    fontStyle: FontStyle.italic,
                                                   ),
                                                 ),
                                               ],
                                             ),
                                           ),
+
+                                          // Amount
                                           Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
+                                            crossAxisAlignment: CrossAxisAlignment.end,
                                             children: [
                                               Text(
                                                 '₹${totalAmount.toStringAsFixed(2)}',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
+                                                  fontSize: 14,
+                                                  color: Colors.green.shade700,
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      // Progress Bar
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: LinearProgressIndicator(
-                                          value:
-                                              totalExpenses > 0
-                                                  ? totalAmount / totalExpenses
-                                                  : 0,
-                                          backgroundColor: Colors.grey.shade200,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                categoryColors[categoryTotals
-                                                        .keys
-                                                        .toList()
-                                                        .indexOf(category) %
-                                                    categoryColors.length],
-                                              ),
-                                          minHeight: 6,
+
+                                      const SizedBox(height: 10),
+
+                                      // Animated Progress Bar
+                                      TweenAnimationBuilder<double>(
+                                        tween: Tween<double>(
+                                          begin: 0,
+                                          end: totalExpenses > 0 ? totalAmount / totalExpenses : 0,
                                         ),
+                                        duration: const Duration(milliseconds: 700),
+                                        builder: (context, value, child) {
+                                          return ClipRRect(
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: LinearProgressIndicator(
+                                              value: value,
+                                              minHeight: 5,
+                                              backgroundColor: Colors.grey.shade300,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                categoryColors[
+                                                categoryTotals.keys.toList().indexOf(category) %
+                                                    categoryColors.length
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
                                 ),
                               );
+
+
+
                             },
                           ),
                         ],
@@ -871,8 +892,40 @@ class _ChartPageState extends State<ChartPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AddExpense()),
-                );
-                _selectedIndex = 1; // Stay on Chart tab after adding expense
+                ).then((_) {
+                  switch (a) {
+                    case 1:
+                      fetchExpensesByCategory();
+                      break;
+                    case 2:
+                      if (date.isNotEmpty) {
+                        final DateFormat formatter = DateFormat('MMM d, yyyy');
+                        final DateTime selectedDate = formatter.parse(date);
+                        fetchExpensesByDate(selectedDate);
+                      }
+                      break;
+                    case 3:
+                      fetchThisWeek();
+                      break;
+                    case 4:
+                      fetchThisMonth();
+                      break;
+                    case 5:
+                      fetchThisYear();
+                      break;
+                    case 6:
+                      if (start.isNotEmpty && end.isNotEmpty) {
+                        final DateFormat formatter = DateFormat('MMM d, yyyy');
+                        final DateTime startDate = formatter.parse(start);
+                        final DateTime endDate = formatter.parse(end);
+                        fetchExpensesInRange(startDate, endDate);
+                      }
+                      break;
+                    default:
+                      fetchExpensesByDate(DateTime.now());
+                  }
+                });
+                _selectedIndex = 1; // Stay on Records tab after adding expense
                 break;
               case 3:
                 Navigator.pushReplacement(
@@ -943,7 +996,7 @@ class _ChartPageState extends State<ChartPage> {
           color: categoryColors[i % categoryColors.length],
           value: amount,
           title: '',
-          radius: 90, // Adjusted radius for a slightly larger donut
+          radius: 20, // Adjusted radius for a slightly larger donut
           titleStyle: const TextStyle(
             fontSize: 0, // Hide title on chart sections
           ),
