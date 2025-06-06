@@ -148,7 +148,9 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => EditBudgetPage()),
-                );
+                ).then((_) {
+                  fetchBudgets();
+                });
               }
             },
             itemBuilder: (context) => [

@@ -67,7 +67,7 @@ class _RecordPageState extends State<RecordPage> {
   @override
   void initState() {
     super.initState();
-    fetchExpensesByCategory();
+    fetchExpensesByDate(DateTime.now());
   }
 
   @override
@@ -285,11 +285,11 @@ class _RecordPageState extends State<RecordPage> {
 
   Future<void> _onMenuSelected(String value) async {
     switch (value) {
-      case 'today':
+      case 'till_now':
         a = 1;
         final today = DateTime.now();
-        date = 'Today';
-        fetchExpensesByDate(today);
+        date = 'Till Now';
+        fetchExpensesByCategory();
         break;
 
       case 'select_date':
@@ -408,12 +408,12 @@ class _RecordPageState extends State<RecordPage> {
                         itemBuilder:
                             (context) => [
                               PopupMenuItem(
-                                value: 'today',
+                                value: 'till_now',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.today, color: primary_color),
+                                    Icon(Icons.access_time_filled_sharp, color: primary_color),
                                     const SizedBox(width: 12),
-                                    const Text('Today'),
+                                    const Text('Till Now'),
                                   ],
                                 ),
                               ),
@@ -499,7 +499,7 @@ class _RecordPageState extends State<RecordPage> {
                             children: [
                               Text(
                                 a == 1
-                                    ? 'Total Expenses Today'
+                                    ? 'Total Expenses Till Now'
                                     : a == 2
                                     ? 'Total Expenses on $date'
                                     : a == 3
@@ -510,7 +510,7 @@ class _RecordPageState extends State<RecordPage> {
                                     ? 'Total Expenses This Year'
                                     : a == 6
                                     ? 'Total Expenses from $start to $end'
-                                    : 'Total Expenses Till Now',
+                                    : 'Total Expenses Today',
                                 style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 14,
@@ -774,7 +774,30 @@ class _RecordPageState extends State<RecordPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => AddExpense()),
-                  );
+                  ).then((_) {
+                    switch (a) {
+                      case 1:
+                        fetchExpensesByCategory();
+                        break;
+                      case 2:
+                        fetchExpensesByDate(date as DateTime);
+                        break;
+                      case 3:
+                        fetchThisWeek();
+                        break;
+                      case 4:
+                        fetchThisMonth();
+                        break;
+                      case 5:
+                        fetchThisYear();
+                        break;
+                      case 6:
+                        fetchExpensesInRange(start as DateTime, end as DateTime);
+                        break;
+                      default:
+                        fetchExpensesByDate(DateTime.now());
+                    }
+                  });
                   _selectedIndex = 0; // Stay on Records tab after adding expense
                   break;
                 case 3:

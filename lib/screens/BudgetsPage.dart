@@ -1,5 +1,4 @@
 import 'package:SmartSpend/screens/AddExpense.dart';
-import 'package:SmartSpend/screens/CategoryWiseBudget.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
 import 'package:SmartSpend/screens/EditBudget.dart';
 import 'package:SmartSpend/screens/SetBudget.dart';
@@ -28,6 +27,12 @@ class _BudgetsPageState extends State<BudgetsPage> {
   @override
   void initState() {
     super.initState();
+    loadActiveBudgets();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     loadActiveBudgets();
   }
 
@@ -135,49 +140,37 @@ class _BudgetsPageState extends State<BudgetsPage> {
           continue;
         }
 
-        // Safely access and check Timestamp
-        final dynamic timestampData = data['Timestamp'];
-        if (timestampData == null || !(timestampData is Timestamp)) {
-          print('Skipping document with invalid or missing Timestamp: ${doc.id}');
+        // Check for Date field
+        final dynamic dateData = data['Date'];
+        if (dateData == null || !(dateData is Timestamp)) {
+          print('Skipping document with invalid or missing Date: ${doc.id}');
           continue;
         }
-        final Timestamp timestamp = timestampData as Timestamp;
-        final docDate = timestamp.toDate();
+        final DateTime docDate = (dateData as Timestamp).toDate();
 
-        // Safely access and check Type
-        final dynamic typeData = data['Type'];
-        final String? type = typeData is String ? typeData : null;
-        if (type != 'Expense') {
-          // Only process expense transactions for spent calculation
+        // Check for Amount
+        final dynamic amountData = data['Amount'];
+        if (amountData == null || !(amountData is num)) {
+          print('Skipping document with invalid or missing Amount: ${doc.id}');
           continue;
         }
+        final double amount = (amountData as num).toDouble();
 
-        // Safely access Category
+        // Check for Category (if filtering by category)
         final dynamic categoryData = data['Category'];
         final String? docCategory = categoryData is String ? categoryData : null;
 
-        // Filter by category if specified
         if (category != null && docCategory != category) {
-           continue;
+          continue;
         }
 
-        // Normalize budget period start and end to the beginning and end of the day
+        // Date range check (including start and end date)
         final startOfDay = DateTime(start.year, start.month, start.day);
         final endOfDay = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
 
-        // Filter by date range, including start and end dates
         if (docDate.isAtSameMomentAs(startOfDay) ||
             (docDate.isAfter(startOfDay) && docDate.isBefore(endOfDay)) ||
             docDate.isAtSameMomentAs(endOfDay)) {
-
-          // Safely access and check Amount
-          final dynamic amountData = data['Amount'];
-          if (amountData == null || !(amountData is num)) {
-             print('Skipping document with invalid or missing Amount: ${doc.id}');
-             continue;
-          }
-          final double amount = (amountData as num).toDouble();
-
           totalSpent += amount;
         }
       }
@@ -189,13 +182,14 @@ class _BudgetsPageState extends State<BudgetsPage> {
     }
   }
 
+
   Widget buildBudgetCard(Map<String, dynamic> budget) {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
       final formatter = DateFormat('dd MMM yyyy');
-      
+
       if (budget['StartDate'] == null || budget['EndDate'] == null || budget['Amount'] == null) {
-        return const SizedBox.shrink(); // Return empty widget if required data is missing
+        return const SizedBox.shrink();
       }
 
       final start = (budget['StartDate'] as Timestamp).toDate();
@@ -209,12 +203,9 @@ class _BudgetsPageState extends State<BudgetsPage> {
         future: calculateSpent(userId, start, end, isCategory ? category : null),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Card(
-              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(child: CircularProgressIndicator()),
-              ),
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: CircularProgressIndicator(),
             );
           }
 
@@ -235,57 +226,122 @@ class _BudgetsPageState extends State<BudgetsPage> {
           final labelColor = spent > total ? Colors.red : Colors.black;
 
           return Card(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 6,
+            shadowColor: Colors.black26,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(18.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  /// Header Row
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: barColor.withOpacity(0.1),
+                        backgroundColor: barColor.withOpacity(0.15),
                         child: Icon(
-                          isCategory ? Icons.category : Icons.wallet,
+                          isCategory ? Icons.category_rounded : Icons.account_balance_wallet_rounded,
                           color: barColor,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
-                          isCategory ? category : 'Total Budget',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isCategory ? category : 'Total Budget',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "(${DateFormat('MMM yyyy').format(start)})",
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            ),
+                          ],
                         ),
                       ),
-                      Text("(${DateFormat('MMM, yyyy').format(start)})"),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: barColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "$daysLeft days left",
+                          style: TextStyle(
+                            color: barColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text("Limit: ₹${total.toStringAsFixed(2)}"),
-                  Text("Spent: ₹${spent.toStringAsFixed(2)}",
-                      style: TextStyle(color: labelColor)),
-                  Text("Remaining: ₹${remaining.toStringAsFixed(2)}",
-                      style: TextStyle(color: barColor)),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: percentUsed,
-                    minHeight: 8,
-                    color: barColor,
-                    backgroundColor: Colors.grey.shade300,
-                  ),
-                  if (spent > total)
-                    const Align(
-                      alignment: Alignment.centerRight,
-                      child: Text("*Limit exceeded",
-                          style: TextStyle(color: Colors.red, fontSize: 12)),
+
+                  const SizedBox(height: 16),
+
+                  /// Progress Bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: percentUsed,
+                      minHeight: 12,
+                      backgroundColor: Colors.grey.shade300,
+                      color: barColor,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "₹${spent.toStringAsFixed(2)} spent",
+                        style: TextStyle(color: labelColor, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        "₹${remaining.toStringAsFixed(2)} left",
+                        style: TextStyle(color: barColor, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// Budget Limits Info
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Limit: ₹${total.toStringAsFixed(2)}",
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      if (spent > total)
+                        const Text(
+                          "*Limit exceeded",
+                          style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                    ],
+                  ),
+
                   const SizedBox(height: 8),
-                  Text("From ${formatter.format(start)} to ${formatter.format(end)}"),
-                  Text("Remaining Days: $daysLeft"),
+
+                  /// Date Range
+                  Row(
+                    children: [
+                      Icon(Icons.date_range, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 6),
+                      Text(
+                        "${formatter.format(start)}  →  ${formatter.format(end)}",
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -303,6 +359,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
       );
     }
   }
+
 
 
   void _checkAndNavigateToSetBudget(BuildContext context, String userId) async {
@@ -368,7 +425,9 @@ class _BudgetsPageState extends State<BudgetsPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ViewBudgetPage()),
-                );// or navigate however you view budgets
+                ).then((_) {
+                  loadActiveBudgets();
+                });// or navigate however you view budgets
               },
               child: const Text('View Budget'),
             ),
@@ -381,6 +440,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
         context,
         MaterialPageRoute(builder: (context) => SetBudgetPage()),
       );
+
     }
   }
 
@@ -407,13 +467,17 @@ class _BudgetsPageState extends State<BudgetsPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ViewBudgetPage()),
-                );
+                ).then((_) {
+                  loadActiveBudgets();
+                });
               }
               else if (value == 'edit_budget'){
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => EditBudgetPage()),
-                );
+                ).then((_) {
+                  loadActiveBudgets();
+                });
               }
               else if (value == 'set_budget') {
                 final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
