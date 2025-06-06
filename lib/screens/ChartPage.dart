@@ -24,33 +24,37 @@ class _ChartPageState extends State<ChartPage> {
   Map<String, double> categoryTotals = {};
   Map<String, List<Map<String, dynamic>>> detailedTransactions = {};
 
+  int _tappedCategoryIndex = -1;
+
   // 24 distinct colors for categories
-  final List<Color> categoryColors = [
-    const Color(0xFF9575CD), // Deep Purple
-    const Color(0xFF7986CB), // Indigo
-    const Color(0xFF64B5F6), // Blue
-    const Color(0xFF4FC3F7), // Light Blue
-    const Color(0xFF4DD0E1), // Cyan
-    const Color(0xFFE57373), // Red
-    const Color(0xFFF06292), // Pink
-    const Color(0xFFBA68C8), // Purple
-    const Color(0xFF4DB6AC), // Teal
-    const Color(0xFF81C784), // Green
-    const Color(0xFFAED581), // Light Green
-    const Color(0xFFFFD54F), // Yellow
-    const Color(0xFFFFB74D), // Orange
-    const Color(0xA1887F), // Brown (Corrected hex length)
-    const Color(0xFF90A4AE), // Blue Grey
-    const Color(0xFF78909C), // Blue Grey Dark
-    const Color(0xFFEF5350), // Red Light
-    const Color(0xEC407A), // Pink Light (Corrected hex length)
-    const Color(0xFFAB47BC), // Purple Light
-    const Color(0xFF7E57C2), // Deep Purple Light
-    const Color(0xFF5C6BC0), // Indigo Light
-    const Color(0x42A5F5), // Blue Light (Corrected hex length)
-    const Color(0x29B6F6), // Light Blue Light (Corrected hex length)
-    const Color(0x26C6DA), // Cyan Light (Corrected hex length)
+  List<Color> categoryColors = [
+
+    Color(0xFF3949ab), // Indigo
+    Color(0xFF1e88e5), // Blue
+    Color(0xFF039be5), // Light Blue
+    Color(0xFF00acc1), // Cyan
+    Color(0xFF00897b), // Teal
+    Color(0xFF43a047), // Green
+    Color(0xFF7cb342), // Lime Green
+    Color(0xFFc0ca33), // Lime
+    Color(0xFFfdd835), // Yellow
+    Color(0xFFffb300), // Amber
+    Color(0xFFfb8c00), // Deep Orange
+    Color(0xFFf4511e), // Strong Orange
+    Color(0xFFe53935), // Strong Red
+    Color(0xFFd81b60), // Vivid Pink
+    Color(0xFF8e24aa), // Strong Purple
+    Color(0xFF5e35b1), // Deep Purple
+    Color(0xFF6d4c41), // Brown
+    Color(0xFF757575), // Grey
+    Color(0xFF546e7a), // Blue Grey
+    Color(0xFF00bcd4), // Bright Cyan
+    Color(0xFF4caf50), // Fresh Green
+    Color(0xFF7986cb), // Lavender Indigo
+    Color(0xFFff7043), // Coral
+    Color(0xFFba68c8), // Soft Purple
   ];
+
 
   Map<String, String> categoryIcons = {
     'Beauty': 'beauty.png',
@@ -388,115 +392,92 @@ class _ChartPageState extends State<ChartPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg_color,
+      appBar: AppBar(
+        backgroundColor: primary_color,
+        title: const Text(
+          'Charts',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onSelected: _onMenuSelected,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'till_now',
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time_filled_sharp, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Till Now'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'select_date',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Select Date'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'this_week',
+                child: Row(
+                  children: [
+                    Icon(Icons.date_range, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('This Week'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'this_month',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('This Month'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'this_year',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_view_month, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('This Year'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'custom',
+                child: Row(
+                  children: [
+                    Icon(Icons.date_range_outlined, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Customize Range'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+
       body: Column(
         children: [
-          // Modern Header Design
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(
-              top: 48,
-              left: 24,
-              right: 24,
-              bottom: 24,
-            ),
-            decoration: BoxDecoration(
-              color: primary_color,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Charts',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 27,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  onSelected: _onMenuSelected,
-                  itemBuilder:
-                      (context) => [
-                        PopupMenuItem(
-                          value: 'till_now',
-                          child: Row(
-                            children: [
-                              Icon(Icons.timelapse_rounded, color: primary_color),
-                              const SizedBox(width: 12),
-                              const Text('Till Now'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'select_date',
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_today, color: primary_color),
-                              const SizedBox(width: 12),
-                              const Text('Select Date'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'this_week',
-                          child: Row(
-                            children: [
-                              Icon(Icons.date_range, color: primary_color),
-                              const SizedBox(width: 12),
-                              const Text('This Week'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'this_month',
-                          child: Row(
-                            children: [
-                              Icon(Icons.calendar_month, color: primary_color),
-                              const SizedBox(width: 12),
-                              const Text('This Month'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'this_year',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_view_month,
-                                color: primary_color,
-                              ),
-                              const SizedBox(width: 12),
-                              const Text('This Year'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'custom',
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.date_range_outlined,
-                                color: primary_color,
-                              ),
-                              const SizedBox(width: 12),
-                              const Text('Customize Range'),
-                            ],
-                          ),
-                        ),
-                      ],
-                ),
-              ],
-            ),
-          ),
           // Main content area
           Expanded(
             child:
@@ -510,7 +491,7 @@ class _ChartPageState extends State<ChartPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.pie_chart_outline,
+                            Icons.pie_chart,
                             size: 64,
                             color: Colors.grey[400],
                           ),
@@ -518,7 +499,8 @@ class _ChartPageState extends State<ChartPage> {
                           Text(
                             'No expenses found for this period.',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
                               fontSize: 16,
                             ),
                           ),
@@ -636,12 +618,11 @@ class _ChartPageState extends State<ChartPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children:
-                                        categoryTotals.entries.map((entry) {
+                                        categoryTotals.entries.toList().asMap().entries.map((item) {
+                                          final index = item.key;
+                                          final entry = item.value;
                                           final color =
-                                              categoryColors[categoryTotals.keys
-                                                      .toList()
-                                                      .indexOf(entry.key) %
-                                                  categoryColors.length];
+                                              categoryColors[index % categoryColors.length];
                                           final percentage =
                                               totalExpenses > 0
                                                   ? (entry.value /
@@ -649,45 +630,52 @@ class _ChartPageState extends State<ChartPage> {
                                                           100)
                                                       .toStringAsFixed(1)
                                                   : '0.0';
-                                          return Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 2.0,
-                                            ), // Adjusted vertical padding
-                                            child: Row(
-                                              children: [
-                                                Container(
-                                                  width:
-                                                      8, // Slightly reduced dot size
-                                                  height:
-                                                      8, // Slightly reduced dot size
-                                                  decoration: BoxDecoration(
-                                                    color: color,
-                                                    shape: BoxShape.circle,
+                                          return InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                _tappedCategoryIndex = index;
+                                              });
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                vertical: 2.0,
+                                              ), // Adjusted vertical padding
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    width:
+                                                        8, // Slightly reduced dot size
+                                                    height:
+                                                        8, // Slightly reduced dot size
+                                                    decoration: BoxDecoration(
+                                                      color: color,
+                                                      shape: BoxShape.circle,
+                                                    ),
                                                   ),
-                                                ),
-                                                const SizedBox(
-                                                  width: 6,
-                                                ), // Slightly reduced spacing
-                                                Expanded(
-                                                  child: Text(
-                                                    entry.key,
+                                                  const SizedBox(
+                                                    width: 6,
+                                                  ), // Slightly reduced spacing
+                                                  Expanded(
+                                                    child: Text(
+                                                      entry.key,
+                                                      style: TextStyle(
+                                                        color: text_color
+                                                            .withOpacity(0.7),
+                                                        fontSize: 11,
+                                                      ), // Reduced font size
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    '$percentage%',
                                                     style: TextStyle(
-                                                      color: text_color
-                                                          .withOpacity(0.7),
+                                                      color: text_color,
                                                       fontSize: 11,
                                                     ), // Reduced font size
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                                Text(
-                                                  '$percentage%',
-                                                  style: TextStyle(
-                                                    color: text_color,
-                                                    fontSize: 11,
-                                                  ), // Reduced font size
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           );
                                         }).toList(),
@@ -991,12 +979,16 @@ class _ChartPageState extends State<ChartPage> {
       final category = categories[i];
       final amount = categoryTotals[category]!;
 
+      // Determine if this section is tapped
+      final isTouched = i == _tappedCategoryIndex;
+      final double radius = isTouched ? 30 : 20; // Increase radius if tapped
+
       sections.add(
         PieChartSectionData(
           color: categoryColors[i % categoryColors.length],
           value: amount,
           title: '',
-          radius: 20, // Adjusted radius for a slightly larger donut
+          radius: radius, // Use dynamic radius
           titleStyle: const TextStyle(
             fontSize: 0, // Hide title on chart sections
           ),

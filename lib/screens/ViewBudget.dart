@@ -174,10 +174,25 @@ class _ViewBudgetPageState extends State<ViewBudgetPage> {
           categoryBudgetList.isEmpty &&
           pastBudgetList.isEmpty &&
           pastCategoryBudgetList.isEmpty)
-          ? const Center(
-        child: Text(
-          'No budgets set till now.',
-          style: TextStyle(fontSize: 18),
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.receipt_sharp,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No budgets set till now.',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
       )
           : ListView(

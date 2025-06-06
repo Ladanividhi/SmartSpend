@@ -29,22 +29,22 @@ class _ViewExpensePageState extends State<ViewExpensePage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final snapshot =
-      await FirebaseFirestore.instance
-          .collection('Expenses')
-          .where('Id', isEqualTo: user.uid)
-          .get(); // Removed orderBy
+          await FirebaseFirestore.instance
+              .collection('Expenses')
+              .where('Id', isEqualTo: user.uid)
+              .get(); // Removed orderBy
 
       List<Map<String, dynamic>> data =
-      snapshot.docs.map((doc) {
-        final d = doc.data();
-        return {
-          'id': doc.id,
-          'category': d['Category'],
-          'message': d['Message'],
-          'amount': d['Amount'],
-          'date': d['Date'].toDate(), // Convert Timestamp to DateTime
-        };
-      }).toList();
+          snapshot.docs.map((doc) {
+            final d = doc.data();
+            return {
+              'id': doc.id,
+              'category': d['Category'],
+              'message': d['Message'],
+              'amount': d['Amount'],
+              'date': d['Date'].toDate(), // Convert Timestamp to DateTime
+            };
+          }).toList();
 
       // Sort manually by date descending
       data.sort((a, b) => b['date'].compareTo(a['date']));
@@ -62,13 +62,13 @@ class _ViewExpensePageState extends State<ViewExpensePage> {
           allExpenses
               .where(
                 (expense) =>
-            expense['category'].toLowerCase().contains(
-              query.toLowerCase(),
-            ) ||
-                expense['message'].toLowerCase().contains(
-                  query.toLowerCase(),
-                ),
-          )
+                    expense['category'].toLowerCase().contains(
+                      query.toLowerCase(),
+                    ) ||
+                    expense['message'].toLowerCase().contains(
+                      query.toLowerCase(),
+                    ),
+              )
               .toList();
     });
   }
@@ -96,110 +96,137 @@ class _ViewExpensePageState extends State<ViewExpensePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => EditExpensePage()),
-                );
+                ).then((_) {
+                  fetchExpenses();
+                });
               }
             },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'edit_expense',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, color: primary_color),
-                    const SizedBox(width: 12),
-                    const Text('Edit Expenses'),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    value: 'edit_expense',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, color: primary_color),
+                        const SizedBox(width: 12),
+                        const Text('Edit Expenses'),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Search Bar
-            TextField(
-              controller: _searchController,
-              onChanged: _filterExpenses,
-              decoration: InputDecoration(
-                hintText: "Search expenses...",
-                prefixIcon: Icon(Icons.search, color: primary_color),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 16,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Expense Cards
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredExpenses.length,
-                itemBuilder: (context, index) {
-                  final expense = filteredExpenses[index];
-                  return Card(
-                    color: Colors.white,
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat('MMMM d, yyyy | HH:mm').format(expense['date']),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            expense['category'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: primary_color,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+        child:
+            filteredExpenses.isEmpty
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.currency_rupee,
+                        size: 64,
+                        color: Colors.grey[400],
                       ),
-
-                      subtitle: Text(
-                        expense['message'],
-                        style: const TextStyle(fontSize: 14),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No expenses found.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
                       ),
-                      trailing: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          children: [
-                            Text(
-                              '₹ ${expense['amount']}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
+                    ],
+                  ),
+                )
+                : Column(
+                  children: [
+                    // Search Bar
+                    TextField(
+                      controller: _searchController,
+                      onChanged: _filterExpenses,
+                      decoration: InputDecoration(
+                        hintText: "Search expenses...",
+                        prefixIcon: Icon(Icons.search, color: primary_color),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+                    const SizedBox(height: 16),
+                    // Expense Cards
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filteredExpenses.length,
+                        itemBuilder: (context, index) {
+                          final expense = filteredExpenses[index];
+                          return Card(
+                            color: Colors.white,
+                            elevation: 3,
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(16),
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    DateFormat(
+                                      'MMMM d, yyyy | HH:mm',
+                                    ).format(expense['date']),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    expense['category'],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: primary_color,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Text(
+                                expense['message'],
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              trailing: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      '₹ ${expense['amount']}',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }

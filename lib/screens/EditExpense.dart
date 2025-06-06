@@ -316,98 +316,118 @@ class _EditExpensePageState extends State<EditExpensePage> {
         backgroundColor: primary_color,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Search Bar
-            TextField(
-              controller: _searchController,
-              onChanged: _filterExpenses,
-              decoration: InputDecoration(
-                hintText: "Search expenses...",
-                prefixIcon: Icon(Icons.search, color: primary_color),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 16,
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: filteredExpenses.isEmpty
+              ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.currency_rupee,
+                  size: 64,
+                  color: Colors.grey[400],
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 16),
+                Text(
+                  'No expenses found.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          )
+              : Column(
+            children: [
+              // Search Bar
+              TextField(
+                controller: _searchController,
+                onChanged: _filterExpenses,
+                decoration: InputDecoration(
+                  hintText: "Search expenses...",
+                  prefixIcon: Icon(Icons.search, color: primary_color),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 16,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Expense Cards
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredExpenses.length,
-                itemBuilder: (context, index) {
-                  final expense = filteredExpenses[index];
-                  return Card(
-                    color: Colors.white,
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat('MMMM d, yyyy | HH:mm').format(expense['date']),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
-                            ),
-                          ),
-
-                          const SizedBox(height: 4),
-                          Text(
-                            expense['category'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: primary_color,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+              const SizedBox(height: 16),
+              // Expense Cards
+              Expanded(
+                child: ListView.builder(
+                  itemCount: filteredExpenses.length,
+                  itemBuilder: (context, index) {
+                    final expense = filteredExpenses[index];
+                    return Card(
+                      color: Colors.white,
+                      elevation: 3,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-
-                      subtitle: Text(
-                        expense['message'],
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      trailing: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '₹ ${expense['amount']}',
+                              DateFormat('MMMM d, yyyy | HH:mm').format(expense['date']),
                               style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                fontSize: 13,
+                                color: Colors.grey,
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.edit, color: primary_color),
-                              onPressed: () => _showEditDialog(index),
+                            const SizedBox(height: 4),
+                            Text(
+                              expense['category'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: primary_color,
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
+                        subtitle: Text(
+                          expense['message'],
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        trailing: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            children: [
+                              Text(
+                                '₹ ${expense['amount']}',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.edit, color: primary_color),
+                                onPressed: () => _showEditDialog(index),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        )
     );
   }
 }

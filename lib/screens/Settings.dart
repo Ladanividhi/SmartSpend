@@ -1,4 +1,5 @@
 import 'package:SmartSpend/screens/AboutUs.dart';
+import 'package:SmartSpend/screens/EditBudget.dart';
 import 'package:SmartSpend/screens/EditExpense.dart';
 import 'package:SmartSpend/screens/FAQs.dart';
 import 'package:SmartSpend/screens/Help.dart';
@@ -60,6 +61,13 @@ class _SettingsPageState extends State<SettingsPage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => EditExpensePage()),
+            );
+          }),
+
+          _buildCardOption(Icons.receipt, 'Edit Budget', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EditBudgetPage()),
             );
           }),
 

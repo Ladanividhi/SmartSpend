@@ -1,14 +1,12 @@
 import 'package:SmartSpend/Constants.dart';
 import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
-import 'package:SmartSpend/screens/Login.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
 import 'package:SmartSpend/screens/BudgetsPage.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:SmartSpend/screens/Settings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -29,7 +27,6 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: bg_color,
       body: Column(
@@ -71,35 +68,99 @@ class _DashboardState extends State<Dashboard> {
                         if (value == 'settings') {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => SettingsPage()),
+                            MaterialPageRoute(
+                              builder: (context) => SettingsPage(),
+                            ),
                           );
                         } else if (value == 'budgets') {
-                          //budgets code here
-
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BudgetsPage(),
+                            ),
+                          );
+                        } else if (value == 'records') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RecordPage(),
+                            ),
+                          );
+                        } else if (value == 'chart') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChartPage(),
+                            ),
+                          );
+                        } else if (value == 'expense') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddExpense(),
+                            ),
+                          );
                         }
                       },
-                      itemBuilder: (BuildContext context) => [
-                        PopupMenuItem(
-                          value: 'budgets',
-                          child: Row(
-                            children: [
-                              Icon(Icons.monetization_on_rounded, color: primary_color),
-                              const SizedBox(width: 12),
-                              const Text('Set Budget'),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'settings',
-                          child: Row(
-                            children: [
-                              Icon(Icons.settings, color: primary_color),
-                              const SizedBox(width: 12),
-                              const Text('Settings'),
-                            ],
-                          ),
-                        ),
-                      ],
+                      itemBuilder:
+                          (BuildContext context) => [
+                            PopupMenuItem(
+                              value: 'records',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.receipt, color: primary_color),
+                                  const SizedBox(width: 12),
+                                  const Text('View Records'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'chart',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.pie_chart, color: primary_color),
+                                  const SizedBox(width: 12),
+                                  const Text('View Charts'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'expense',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.currency_rupee,
+                                    color: primary_color,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('Add Expense'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'budgets',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.monetization_on_rounded,
+                                    color: primary_color,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text('Budgets'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'settings',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.settings, color: primary_color),
+                                  const SizedBox(width: 12),
+                                  const Text('Settings'),
+                                ],
+                              ),
+                            ),
+                          ],
                     ),
                   ],
                 ),
@@ -116,7 +177,7 @@ class _DashboardState extends State<Dashboard> {
 
                 const SizedBox(height: 8),
                 Text(
-                  'Welcome back! Let\'s manage your finances',
+                  'Good to see you! Ready to track your spending?',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
                     fontSize: 14,
@@ -124,71 +185,6 @@ class _DashboardState extends State<Dashboard> {
                 ),
                 const SizedBox(height: 24),
                 // Financial Overview Cards
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Total Balance',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              '\$4,878.00',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Monthly Savings',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              '\$1,200.00',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -218,6 +214,8 @@ class _DashboardState extends State<Dashboard> {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.grey, // Same as unselected color
           unselectedItemColor: Colors.grey,
+          selectedFontSize: 13,
+          unselectedFontSize: 13,
           showSelectedLabels: true,
           showUnselectedLabels: true,
           currentIndex: _selectedIndex,

@@ -554,9 +554,10 @@ class _RecordPageState extends State<RecordPage> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No transactions found for this period.',
+                                'No expenses found for this period.',
                                 style: TextStyle(
-                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
                                   fontSize: 16,
                                 ),
                               ),
