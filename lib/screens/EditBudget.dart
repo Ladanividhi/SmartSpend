@@ -76,14 +76,12 @@ class _EditBudgetPageState extends State<EditBudgetPage> {
                   subtitle: Text(formatter.format(startDate)),
                   trailing: IconButton(
                     icon: const Icon(Icons.calendar_today),
-                    onPressed: () async {
-                      DateTime? picked = await showDatePicker(
-                        context: context,
-                        initialDate: startDate,
-                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                    onPressed: () {
+                      Fluttertoast.showToast(
+                        msg: "You cannot edit the start date of the budget.",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
                       );
-                      if (picked != null) setState(() => startDate = picked);
                     },
                   ),
                 ),
@@ -96,7 +94,7 @@ class _EditBudgetPageState extends State<EditBudgetPage> {
                       DateTime? picked = await showDatePicker(
                         context: context,
                         initialDate: endDate,
-                        firstDate: startDate,
+                        firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (picked != null) setState(() => endDate = picked);
