@@ -187,13 +187,6 @@ class _SettingsPageState extends State<SettingsPage> {
             );
           }),
 
-          _buildCardOption(Icons.person, 'Edit Profile', () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ProfilePage()),
-            );
-          }),
-
           Card(
             elevation: 2,
             color: bg_color,
@@ -280,12 +273,36 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               onTap: () {
-                signout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => Login()),
-                  (Route<dynamic> route) => false,
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text("Confirm Logout"),
+                      content: Text("Are you sure you want to log out from this account?"),
+                      actions: [
+                        TextButton(
+                          child: Text("Cancel"),
+                          onPressed: () {
+                            Navigator.of(context).pop();  // closes the dialog
+                          },
+                        ),
+                        TextButton(
+                          child: Text("Yes"),
+                          onPressed: () {
+                            Navigator.of(context).pop(); // close dialog first
+                            signout();
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (context) => Login()),
+                                  (Route<dynamic> route) => false,
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
+
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:SmartSpend/Constants.dart';
+import 'package:SmartSpend/screens/EditExpense.dart';
 import 'package:SmartSpend/screens/ViewExpenses.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -68,36 +69,16 @@ class _AddExpenseState extends State<AddExpense> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {
-              if (value == 'add_category') {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text("Add New Category"),
-                    content: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Enter category name",
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text("Cancel"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Save new category logic
-                          Navigator.pop(context);
-                        },
-                        child: Text("Add"),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              else if (value == 'view_expense') {
+              if (value == 'view_expense') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ViewExpensePage()),
+                );
+              }
+              else if (value == 'edit_expense') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditExpensePage()),
                 );
               }
             },
@@ -113,12 +94,12 @@ class _AddExpenseState extends State<AddExpense> {
                 ),
               ),
               PopupMenuItem(
-                value: 'add_category',
+                value: 'edit_expense',
                 child: Row(
                   children: [
-                    Icon(Icons.add_box, color: primary_color),
+                    Icon(Icons.edit, color: primary_color),
                     const SizedBox(width: 12),
-                    const Text('Add new category'),
+                    const Text('Edit Expenses'),
                   ],
                 ),
               ),

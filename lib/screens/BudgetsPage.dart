@@ -1,5 +1,6 @@
 import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
+import 'package:SmartSpend/screens/Dashboard.dart';
 import 'package:SmartSpend/screens/EditBudget.dart';
 import 'package:SmartSpend/screens/SetBudget.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
@@ -20,7 +21,7 @@ class BudgetsPage extends StatefulWidget {
 }
 
 class _BudgetsPageState extends State<BudgetsPage> {
-  int _selectedIndex = 3;
+  int _selectedIndex = 4;
   List<Map<String, dynamic>> activeBudgets = [];
   bool isLoading = true;
 
@@ -216,7 +217,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
 
       final start = (budget['StartDate'] as Timestamp).toDate();
       final end = (budget['EndDate'] as Timestamp).toDate();
-      final daysLeft = end.difference(DateTime.now()).inDays;
+      final daysLeft = end.difference(DateTime.now()).inDays + 2;
       final total = (budget['Amount'] as num).toDouble();
       final isCategory = budget['type'] == 'category';
       final category = budget['Category'] ?? '';
@@ -499,7 +500,9 @@ class _BudgetsPageState extends State<BudgetsPage> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SetBudgetPage()),
-      );
+      ).then((_) {
+        loadActiveBudgets();
+      });
     }
   }
 
@@ -637,43 +640,52 @@ class _BudgetsPageState extends State<BudgetsPage> {
             setState(() => _selectedIndex = index);
             switch (index) {
               case 0:
-                Navigator.pushReplacement(
+                Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => RecordPage()),
+                  MaterialPageRoute(builder: (context) => Dashboard()),
+                      (Route<dynamic> route) => false,
                 );
+                _selectedIndex=0;
                 break;
               case 1:
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => ChartPage()),
-                );
+                  MaterialPageRoute(builder: (context) => RecordPage()),
+                ).then((_) {
+                  loadActiveBudgets();
+                });
                 break;
               case 2:
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => AddExpense()),
-                );
-                _selectedIndex = 3;
+                ).then((_) {
+                  loadActiveBudgets();
+                });
+                _selectedIndex = 4;
                 break;
               case 3:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => ChartPage()),
+                );
                 break;
               case 4:
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                  MaterialPageRoute(builder: (context) => BudgetsPage()),
                 );
-                _selectedIndex = 3;
                 break;
             }
           },
           items: [
             const BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt_rounded),
-              label: 'Records',
+              icon: Icon(Icons.home),
+              label: 'Home',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_rounded),
-              label: 'Chart',
+              icon: Icon(Icons.list_alt_rounded),
+              label: 'Expenses',
             ),
             BottomNavigationBarItem(
               icon: Container(
@@ -694,12 +706,12 @@ class _BudgetsPageState extends State<BudgetsPage> {
               label: '',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_rounded),
-              label: 'Budgets',
+              icon: Icon(Icons.pie_chart),
+              label: 'Charts',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Me',
+              icon: Icon(Icons.receipt_long_rounded),
+              label: 'Budgets',
             ),
           ],
         ),

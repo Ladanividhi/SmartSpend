@@ -1,5 +1,5 @@
 import 'package:SmartSpend/screens/AddExpense.dart';
-import 'package:SmartSpend/screens/ProfilePage.dart';
+import 'package:SmartSpend/screens/Dashboard.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
 import 'package:SmartSpend/screens/BudgetsPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,7 +18,7 @@ class ChartPage extends StatefulWidget {
 }
 
 class _ChartPageState extends State<ChartPage> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 3;
   bool isLoading = true;
   double totalExpenses = 0;
   Map<String, double> categoryTotals = {};
@@ -385,6 +385,15 @@ class _ChartPageState extends State<ChartPage> {
           );
         }
         break;
+      case 'yesterday':
+        a = 7;
+        DateTime yesterday = DateTime.now().subtract(Duration(days: 1));
+        fetchExpensesByDate(yesterday);
+        break;
+      case 'today':
+        a = 8;
+        fetchExpensesByDate(DateTime.now());
+        break;
     }
   }
 
@@ -412,12 +421,22 @@ class _ChartPageState extends State<ChartPage> {
             onSelected: _onMenuSelected,
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: 'till_now',
+                value: 'today',
                 child: Row(
                   children: [
-                    Icon(Icons.access_time_filled_sharp, color: primary_color),
+                    Icon(Icons.today, color: primary_color),
                     const SizedBox(width: 12),
-                    const Text('Till Now'),
+                    const Text('Today'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'yesterday',
+                child: Row(
+                  children: [
+                    Icon(Icons.today_outlined, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Yesterday'),
                   ],
                 ),
               ),
@@ -468,6 +487,16 @@ class _ChartPageState extends State<ChartPage> {
                     Icon(Icons.date_range_outlined, color: primary_color),
                     const SizedBox(width: 12),
                     const Text('Customize Range'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'till_now',
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time_filled_sharp, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Till Now'),
                   ],
                 ),
               ),
@@ -543,6 +572,8 @@ class _ChartPageState extends State<ChartPage> {
                                       ? 'Total Expenses This Year'
                                       : a == 6
                                       ? 'Total Expenses from $start to $end'
+                                      : a == 7
+                                      ? 'Total Expenses Yesterday'
                                       : 'Total Expenses Today',
                                   style: const TextStyle(
                                     color: primary_color,
@@ -869,12 +900,18 @@ class _ChartPageState extends State<ChartPage> {
             });
             switch (index) {
               case 0:
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => Dashboard()),
+                      (Route<dynamic> route) => false,
+                );
+                _selectedIndex=0;
+                break;
+              case 1:
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => RecordPage()),
                 );
-                break;
-              case 1:
                 break;
               case 2:
                 Navigator.push(
@@ -909,35 +946,40 @@ class _ChartPageState extends State<ChartPage> {
                         fetchExpensesInRange(startDate, endDate);
                       }
                       break;
+                    case 7:
+                      DateTime yesterday = DateTime.now().subtract(Duration(days: 1));
+                      fetchExpensesByDate(yesterday);
+                      break;
+                    case 8:
+                      fetchExpensesByDate(DateTime.now());
                     default:
                       fetchExpensesByDate(DateTime.now());
                   }
                 });
-                _selectedIndex = 1; // Stay on Records tab after adding expense
+                _selectedIndex = 3; // Stay on Records tab after adding expense
                 break;
               case 3:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => ChartPage()),
+                );
+                break;
+              case 4:
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => BudgetsPage()),
                 );
                 break;
-              case 4:
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfilePage()),
-                );
-                _selectedIndex = 1; // Stay on Chart tab after viewing profile
-                break;
             }
           },
           items: [
             const BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt_rounded),
-              label: 'Records',
+              icon: Icon(Icons.home),
+              label: 'Home',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart_rounded),
-              label: 'Chart',
+              icon: Icon(Icons.list_alt_rounded),
+              label: 'Expenses',
             ),
             BottomNavigationBarItem(
               icon: Container(
@@ -958,12 +1000,12 @@ class _ChartPageState extends State<ChartPage> {
               label: '',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_rounded),
-              label: 'Budgets',
+              icon: Icon(Icons.pie_chart),
+              label: 'Charts',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Me',
+              icon: Icon(Icons.receipt_long_rounded),
+              label: 'Budgets',
             ),
           ],
         ),

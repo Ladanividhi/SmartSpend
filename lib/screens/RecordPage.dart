@@ -1,6 +1,7 @@
 import 'package:SmartSpend/Constants.dart';
 import 'package:SmartSpend/screens/AddExpense.dart';
 import 'package:SmartSpend/screens/ChartPage.dart';
+import 'package:SmartSpend/screens/Dashboard.dart';
 import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:SmartSpend/screens/BudgetsPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,7 +19,7 @@ class RecordPage extends StatefulWidget {
 
 class _RecordPageState extends State<RecordPage> {
   int a = 0;
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
   double totalExpenses = 0;
   double totalIncome = 0;
   String date = '';
@@ -343,19 +344,26 @@ class _RecordPageState extends State<RecordPage> {
           } else {
             Fluttertoast.showToast(
               msg: "End date not selected.",
-              backgroundColor: Colors.black87,
-              textColor: Colors.white,
-              gravity: ToastGravity.CENTER,
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
             );
           }
         } else {
           Fluttertoast.showToast(
             msg: "Start date not selected.",
-            backgroundColor: Colors.black87,
-            textColor: Colors.white,
-            gravity: ToastGravity.CENTER,
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
           );
         }
+        break;
+      case 'yesterday':
+        a = 7;
+        DateTime yesterday = DateTime.now().subtract(Duration(days: 1));
+        fetchExpensesByDate(yesterday);
+        break;
+      case 'today':
+        a = 8;
+        fetchExpensesByDate(DateTime.now());
         break;
     }
   }
@@ -391,7 +399,7 @@ class _RecordPageState extends State<RecordPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Records',
+                        'Expenses',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 27,
@@ -408,12 +416,22 @@ class _RecordPageState extends State<RecordPage> {
                         itemBuilder:
                             (context) => [
                               PopupMenuItem(
-                                value: 'till_now',
+                                value: 'today',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.access_time_filled_sharp, color: primary_color),
+                                    Icon(Icons.today, color: primary_color),
                                     const SizedBox(width: 12),
-                                    const Text('Till Now'),
+                                    const Text('Today'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'yesterday',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.today_outlined, color: primary_color),
+                                    const SizedBox(width: 12),
+                                    const Text('Yesterday'),
                                   ],
                                 ),
                               ),
@@ -479,6 +497,16 @@ class _RecordPageState extends State<RecordPage> {
                                   ],
                                 ),
                               ),
+                              PopupMenuItem(
+                                value: 'till_now',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.access_time_filled_sharp, color: primary_color),
+                                    const SizedBox(width: 12),
+                                    const Text('Till Now'),
+                                  ],
+                                ),
+                              ),
                             ],
                       ),
                     ],
@@ -510,6 +538,8 @@ class _RecordPageState extends State<RecordPage> {
                                     ? 'Total Expenses This Year'
                                     : a == 6
                                     ? 'Total Expenses from $start to $end'
+                                    : a == 7
+                                    ? 'Total Expenses Yesterday'
                                     : 'Total Expenses Today',
                                 style: const TextStyle(
                                   color: Colors.white70,
@@ -764,12 +794,14 @@ class _RecordPageState extends State<RecordPage> {
               });
               switch (index) {
                 case 0:
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => Dashboard()),
+                        (Route<dynamic> route) => false,
+                  );
+                  _selectedIndex=0;
                   break;
                 case 1:
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => ChartPage()),
-                  );
                   break;
                 case 2:
                   Navigator.push(
@@ -804,35 +836,41 @@ class _RecordPageState extends State<RecordPage> {
                           fetchExpensesInRange(startDate, endDate);
                         }
                         break;
+                      case 7:
+                        DateTime yesterday = DateTime.now().subtract(Duration(days: 1));
+                        fetchExpensesByDate(yesterday);
+                        break;
+                      case 8:
+                        fetchExpensesByDate(DateTime.now());
+                        break;
                       default:
                         fetchExpensesByDate(DateTime.now());
                     }
                   });
-                  _selectedIndex = 0; // Stay on Records tab after adding expense
+                  _selectedIndex = 1; // Stay on Records tab after adding expense
                   break;
                 case 3:
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => ChartPage()),
+                  );
+                  break;
+                case 4:
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => BudgetsPage()),
                   );
                   break;
-                case 4:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ProfilePage()),
-                  );
-                  _selectedIndex = 0; // Stay on Records tab after viewing profile
-                  break;
               }
             },
             items: [
               const BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt_rounded),
-                label: 'Records',
+                icon: Icon(Icons.home),
+                label: 'Home',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.pie_chart_rounded),
-                label: 'Chart',
+                icon: Icon(Icons.list_alt_rounded),
+                label: 'Expenses',
               ),
               BottomNavigationBarItem(
                 icon: Container(
@@ -853,12 +891,12 @@ class _RecordPageState extends State<RecordPage> {
                 label: '',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_rounded),
-                label: 'Budgets',
+                icon: Icon(Icons.pie_chart),
+                label: 'Chart',
               ),
               const BottomNavigationBarItem(
-                icon: Icon(Icons.person_rounded),
-                label: 'Me',
+                icon: Icon(Icons.receipt_long_rounded),
+                label: 'Budgets',
               ),
             ],
           ),

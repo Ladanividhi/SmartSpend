@@ -136,41 +136,6 @@ class _CategoryWiseBudgetPageState extends State<CategoryWiseBudgetPage> {
     );
   }
 
-
-  void _showAddCategoryDialog() {
-    final TextEditingController _categoryController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Add New Category"),
-        content: TextField(
-          controller: _categoryController,
-          decoration: const InputDecoration(hintText: "Enter category name"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = _categoryController.text.trim();
-              if (name.isNotEmpty) {
-                setState(() {
-                  categories.add({'label': name, 'icon': 'others.png'});
-                });
-              }
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: primary_color),
-            child: const Text("Add", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,9 +150,7 @@ class _CategoryWiseBudgetPageState extends State<CategoryWiseBudgetPage> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onSelected: (value) {
-              if (value == 'add_category') {
-                _showAddCategoryDialog();
-              } else if (value == 'view_budget') {
+              if (value == 'view_budget') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ViewBudgetPage()),
@@ -202,16 +165,6 @@ class _CategoryWiseBudgetPageState extends State<CategoryWiseBudgetPage> {
                     Icon(Icons.bar_chart, color: primary_color),
                     const SizedBox(width: 12),
                     const Text('View all Budgets'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'add_category',
-                child: Row(
-                  children: [
-                    Icon(Icons.add_box, color: primary_color),
-                    const SizedBox(width: 12),
-                    const Text('Add new category'),
                   ],
                 ),
               ),

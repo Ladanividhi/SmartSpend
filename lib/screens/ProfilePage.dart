@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:SmartSpend/Constants.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:SmartSpend/screens/Settings.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -123,6 +124,34 @@ class _ProfilePageState extends State<ProfilePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+          actions: [
+            PopupMenuButton<String>(
+              icon: Icon(Icons.more_vert, color: Colors.white),
+              onSelected: (value) {
+                if (value == 'settings') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsPage()),
+                  ).then((_) {
+                    _loadGoogleUserData();
+                  });
+                }
+              },
+              itemBuilder:
+                  (context) => [
+                PopupMenuItem(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings, color: primary_color),
+                      const SizedBox(width: 12),
+                      const Text('Settings'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ]
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
