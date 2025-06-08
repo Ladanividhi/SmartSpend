@@ -136,21 +136,48 @@ git push origin feature/AmazingFeature
 
 ## 📸 Screenshots
 
-### 📊 Dashboard
-<img src="assets/screenshots/dashboard.jpg" alt="Dashboard" width="300"/>
+### 🏠 Dashboard
+Overview of all active budgets with progress indicators.
 
-### 👀 Expenses
-<img src="assets/screenshots/expenses.jpg" alt="Expenses" width="300"/>
+<div align="center">
+  <img src="assets/screenshots/dashboard.jpg" alt="Dashboard" width="300"/>
+</div>
 
-### 💸 Budget Page
-<img src="assets/screenshots/budgets.jpg" alt="Budget Page" width="300"/>
+---
 
-### 📊 Expense Chart
-<img src="assets/screenshots/chart.jpg" alt="Expense Chart" width="300"/>
+### 💰 Expenses
+Displays all expenses categorized for better tracking.
 
-### 📈 Add Expenses
-<img src="assets/screenshots/addexpense.jpg" alt="Add Expense" width="300"/>
+<div align="center">
+  <img src="assets/screenshots/expenses.jpg" alt="Expenses" width="300"/>
+</div>
 
+---
+
+### 📅 Budget Page
+Set and manage total and category-wise budgets with ease.
+
+<div align="center">
+  <img src="assets/screenshots/budgets.jpg" alt="Budget Page" width="300"/>
+</div>
+
+---
+
+### 📉 Expense Chart
+Visual representation of your spending patterns.
+
+<div align="center">
+  <img src="assets/screenshots/chart.jpg" alt="Expense Chart" width="300"/>
+</div>
+
+---
+
+### ➕ Add Expenses
+Choose a category and quickly add your expenses.
+
+<div align="center">
+  <img src="assets/screenshots/addexpense.jpg" alt="Add Expense Page" width="300"/>
+</div>
 
 ## 🤝 Collaborators
 
