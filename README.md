@@ -87,28 +87,6 @@ flutter pub get
 flutter run
 ```
 
-## Project Structure
-
-```
-lib/
-├── Constants.dart
-├── main.dart
-├── screens/
-│   ├── AddExpense.dart
-│   ├── BudgetsPage.dart
-│   ├── CategoryWiseBudget.dart
-│   ├── ChartPage.dart
-│   ├── Dashboard.dart
-│   ├── EditBudget.dart
-│   ├── ProfilePage.dart
-│   ├── RecordPage.dart
-│   ├── SetBudget.dart
-│   └── ViewBudget.dart
-├── models/
-├── services/
-└── widgets/
-```
-
 ## 📌 Features in Detail
 
 ### 🎯 Budget Management
@@ -159,17 +137,18 @@ git push origin feature/AmazingFeature
 ## 📸 Screenshots
 
 ### 📊 Dashboard
-![Dashboard](assets/screenshots/dashboard.jpg)
+<img src="assets/screenshots/dashboard.jpg" alt="Dashboard" width="300"/>
 
 ### 👀 Expenses
-![Expenses](assets/screenshots/expenses.jpg)
+<img src="assets/screenshots/expenses.jpg" alt="Expenses" width="300"/>
 
 ### 💸 Budget Page
-![Budget Page ](assets/screenshots/budgets.jpg)
+<img src="assets/screenshots/budgets.jpg" alt="Budget Page" width="300"/>
 
 ### 📊 Expense Chart
-![Expense Chart](assets/screenshots/chart.jpg)
+<img src="assets/screenshots/chart.jpg" alt="Expense Chart" width="300"/>
 
 ### 📈 Add Expenses
-![Add Expense](assets/screenshots/addexpense.jpg)
+<img src="assets/screenshots/addexpense.jpg" alt="Add Expense" width="300"/>
+
 
