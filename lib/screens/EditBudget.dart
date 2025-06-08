@@ -269,15 +269,27 @@ class _EditBudgetPageState extends State<EditBudgetPage> {
           }
 
           final now = DateTime.now();
+          final nowDateOnly = DateTime(now.year, now.month, now.day);
           final allBudgets = snapshot.data!;
+
           final activeBudgets = allBudgets.where((doc) {
+            final startDate = (doc['StartDate'] as Timestamp).toDate();
             final endDate = (doc['EndDate'] as Timestamp).toDate();
-            return endDate.isAfter(now) || endDate.isAtSameMomentAs(now);
+
+            final startDateOnly = DateTime(startDate.year, startDate.month, startDate.day);
+            final endDateOnly = DateTime(endDate.year, endDate.month, endDate.day);
+
+            return (nowDateOnly.isAtSameMomentAs(startDateOnly) ||
+                nowDateOnly.isAtSameMomentAs(endDateOnly) ||
+                (nowDateOnly.isAfter(startDateOnly) && nowDateOnly.isBefore(endDateOnly)));
           }).toList();
+
           final pastBudgets = allBudgets.where((doc) {
             final endDate = (doc['EndDate'] as Timestamp).toDate();
-            return endDate.isBefore(now);
+            final endDateOnly = DateTime(endDate.year, endDate.month, endDate.day);
+            return nowDateOnly.isAfter(endDateOnly);
           }).toList();
+
 
           return ListView(
             padding: const EdgeInsets.all(12),

@@ -3,7 +3,6 @@ import 'package:SmartSpend/screens/ChartPage.dart';
 import 'package:SmartSpend/screens/Dashboard.dart';
 import 'package:SmartSpend/screens/EditBudget.dart';
 import 'package:SmartSpend/screens/SetBudget.dart';
-import 'package:SmartSpend/screens/ProfilePage.dart';
 import 'package:SmartSpend/screens/RecordPage.dart';
 import 'package:SmartSpend/screens/ViewBudget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -23,21 +22,22 @@ class BudgetsPage extends StatefulWidget {
 class _BudgetsPageState extends State<BudgetsPage> {
   int _selectedIndex = 4;
   List<Map<String, dynamic>> activeBudgets = [];
+  List<Map<String, dynamic>> pastBudgets = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadActiveBudgets();
+    loadBudgets();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    loadActiveBudgets();
+    loadBudgets();
   }
 
-  Future<void> loadActiveBudgets() async {
+  Future<void> loadBudgets() async {
     try {
       setState(() {
         isLoading = true;
@@ -48,25 +48,26 @@ class _BudgetsPageState extends State<BudgetsPage> {
         setState(() {
           isLoading = false;
           activeBudgets = [];
+          pastBudgets = [];
         });
         return;
       }
 
       final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);  // 🔥 added
 
-      QuerySnapshot budgetSnapshot =
-          await FirebaseFirestore.instance
-              .collection('Budget')
-              .where('Id', isEqualTo: userId)
-              .get();
+      QuerySnapshot budgetSnapshot = await FirebaseFirestore.instance
+          .collection('Budget')
+          .where('Id', isEqualTo: userId)
+          .get();
 
-      QuerySnapshot categoryBudgetSnapshot =
-          await FirebaseFirestore.instance
-              .collection('CategoryBudget')
-              .where('Id', isEqualTo: userId)
-              .get();
+      QuerySnapshot categoryBudgetSnapshot = await FirebaseFirestore.instance
+          .collection('CategoryBudget')
+          .where('Id', isEqualTo: userId)
+          .get();
 
-      List<Map<String, dynamic>> allBudgets = [];
+      List<Map<String, dynamic>> allActiveBudgets = [];
+      List<Map<String, dynamic>> allPastBudgets = [];
 
       for (var doc in budgetSnapshot.docs) {
         try {
@@ -74,19 +75,26 @@ class _BudgetsPageState extends State<BudgetsPage> {
           if (data['StartDate'] == null ||
               data['EndDate'] == null ||
               data['Amount'] == null) {
-            continue; // Skip invalid documents
+            continue;
           }
 
           final start = (data['StartDate'] as Timestamp).toDate();
           final end = (data['EndDate'] as Timestamp).toDate();
+          final startDate = DateTime(start.year, start.month, start.day);
+          final endDate = DateTime(end.year, end.month, end.day);
 
-          if (now.isAfter(start) && now.isBefore(end)) {
-            data['type'] = 'total';
-            allBudgets.add(data);
+          data['type'] = 'total';
+
+          if (today.isAtSameMomentAs(startDate) ||  // 🔥 changed
+              today.isAtSameMomentAs(endDate) ||
+              (today.isAfter(startDate) && today.isBefore(endDate))) {
+            allActiveBudgets.add(data);
+          } else if (today.isAfter(endDate)) {
+            allPastBudgets.add(data);
           }
         } catch (e) {
           print("Error processing budget document: $e");
-          continue; // Skip problematic documents
+          continue;
         }
       }
 
@@ -97,24 +105,32 @@ class _BudgetsPageState extends State<BudgetsPage> {
               data['EndDate'] == null ||
               data['Amount'] == null ||
               data['Category'] == null) {
-            continue; // Skip invalid documents
+            continue;
           }
 
           final start = (data['StartDate'] as Timestamp).toDate();
           final end = (data['EndDate'] as Timestamp).toDate();
+          final startDate = DateTime(start.year, start.month, start.day);
+          final endDate = DateTime(end.year, end.month, end.day);
 
-          if (now.isAfter(start) && now.isBefore(end)) {
-            data['type'] = 'category';
-            allBudgets.add(data);
+          data['type'] = 'category';
+
+          if (today.isAtSameMomentAs(startDate) ||  // 🔥 changed
+              today.isAtSameMomentAs(endDate) ||
+              (today.isAfter(startDate) && today.isBefore(endDate))) {
+            allActiveBudgets.add(data);
+          } else if (today.isAfter(endDate)) {
+            allPastBudgets.add(data);
           }
         } catch (e) {
           print("Error processing category budget document: $e");
-          continue; // Skip problematic documents
+          continue;
         }
       }
 
       setState(() {
-        activeBudgets = allBudgets;
+        activeBudgets = allActiveBudgets;
+        pastBudgets = allPastBudgets;
         isLoading = false;
       });
     } catch (e) {
@@ -122,6 +138,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
       setState(() {
         isLoading = false;
         activeBudgets = [];
+        pastBudgets = [];
       });
       Fluttertoast.showToast(
         msg: "Error loading budgets. Please try again.",
@@ -217,7 +234,8 @@ class _BudgetsPageState extends State<BudgetsPage> {
 
       final start = (budget['StartDate'] as Timestamp).toDate();
       final end = (budget['EndDate'] as Timestamp).toDate();
-      final daysLeft = end.difference(DateTime.now()).inDays + 2;
+      final now = DateTime.now();
+      final daysLeft = end.difference(DateTime(now.year, now.month, now.day)).inDays + 1;
       final total = (budget['Amount'] as num).toDouble();
       final isCategory = budget['type'] == 'category';
       final category = budget['Category'] ?? '';
@@ -422,28 +440,32 @@ class _BudgetsPageState extends State<BudgetsPage> {
 
   void _checkAndNavigateToSetBudget(BuildContext context, String userId) async {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);  // 🔥 added
 
-    // Query Budget collection for active budgets
-    final budgetQuery =
-        await FirebaseFirestore.instance
-            .collection('Budget')
-            .where('Id', isEqualTo: userId)
-            .get();
+    // Query Budget collection for budgets
+    final budgetQuery = await FirebaseFirestore.instance
+        .collection('Budget')
+        .where('Id', isEqualTo: userId)
+        .get();
 
-    // Query CategoryBudget collection for active budgets
-    final categoryBudgetQuery =
-        await FirebaseFirestore.instance
-            .collection('CategoryBudget')
-            .where('Id', isEqualTo: userId)
-            .get();
+    // Query CategoryBudget collection for budgets
+    final categoryBudgetQuery = await FirebaseFirestore.instance
+        .collection('CategoryBudget')
+        .where('Id', isEqualTo: userId)
+        .get();
 
     bool hasActiveBudget = false;
 
-    // Function to check if now is between start and end date
+    // Function to check if today is active according to new rule
     bool isActiveBudget(DocumentSnapshot doc) {
       final startDate = (doc['StartDate'] as Timestamp).toDate();
       final endDate = (doc['EndDate'] as Timestamp).toDate();
-      return now.isAfter(startDate) && now.isBefore(endDate);
+      final start = DateTime(startDate.year, startDate.month, startDate.day);
+      final end = DateTime(endDate.year, endDate.month, endDate.day);
+
+      return (today.isAtSameMomentAs(start) ||
+          today.isAtSameMomentAs(end) ||
+          (today.isAfter(start) && today.isBefore(end)));
     }
 
     // Check in Budget collection
@@ -468,32 +490,31 @@ class _BudgetsPageState extends State<BudgetsPage> {
       // Show alert dialog
       showDialog(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: const Text('Active Budget Found'),
-              content: const Text(
-                'You already have one active budget right now.\n\n'
+        builder: (context) => AlertDialog(
+          title: const Text('Active Budget Found'),
+          content: const Text(
+            'You already have one active budget right now.\n\n'
                 'For more details, kindly click on "View Budget" or cancel.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context), // just close dialog
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // close dialog
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ViewBudgetPage()),
-                    ).then((_) {
-                      loadActiveBudgets();
-                    }); // or navigate however you view budgets
-                  },
-                  child: const Text('View Budget'),
-                ),
-              ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ViewBudgetPage()),
+                ).then((_) {
+                  loadBudgets();
+                });
+              },
+              child: const Text('View Budget'),
+            ),
+          ],
+        ),
       );
     } else {
       // No active budget, navigate to SetBudgetPage
@@ -501,7 +522,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
         context,
         MaterialPageRoute(builder: (context) => SetBudgetPage()),
       ).then((_) {
-        loadActiveBudgets();
+        loadBudgets();
       });
     }
   }
@@ -530,87 +551,111 @@ class _BudgetsPageState extends State<BudgetsPage> {
                   context,
                   MaterialPageRoute(builder: (context) => ViewBudgetPage()),
                 ).then((_) {
-                  loadActiveBudgets();
+                  loadBudgets();
                 });
               } else if (value == 'edit_budget') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => EditBudgetPage()),
                 ).then((_) {
-                  loadActiveBudgets();
+                  loadBudgets();
                 });
               } else if (value == 'set_budget') {
                 final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
                 _checkAndNavigateToSetBudget(context, userId);
               }
             },
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem(
-                    value: 'set_budget',
-                    child: Row(
-                      children: [
-                        Icon(Icons.receipt_long, color: primary_color),
-                        const SizedBox(width: 12),
-                        const Text('Set Budget'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'view_budget',
-                    child: Row(
-                      children: [
-                        Icon(Icons.bar_chart, color: primary_color),
-                        const SizedBox(width: 12),
-                        const Text('View Budget'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'edit_budget',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, color: primary_color),
-                        const SizedBox(width: 12),
-                        const Text('Edit Budget'),
-                      ],
-                    ),
-                  ),
-                ],
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'set_budget',
+                child: Row(
+                  children: [
+                    Icon(Icons.receipt_long, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Set Budget'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'view_budget',
+                child: Row(
+                  children: [
+                    Icon(Icons.bar_chart, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('View Budget'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'edit_budget',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: primary_color),
+                    const SizedBox(width: 12),
+                    const Text('Edit Budget'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : activeBudgets.isEmpty
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : (activeBudgets.isEmpty && pastBudgets.isEmpty)
               ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.receipt_sharp,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No active budgets found',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                        fontSize: 16,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.receipt_sharp,
+                        size: 64,
+                        color: Colors.grey[400],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No budgets found',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView(
+                  children: [
+                    if (activeBudgets.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Active Budgets',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: primary_color,
+                          ),
+                        ),
+                      ),
+                      ...activeBudgets.map((budget) => buildBudgetCard(budget)),
+                    ],
+                    if (pastBudgets.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Past Budgets',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      ...pastBudgets.map((budget) => buildBudgetCard(budget)),
+                    ],
                   ],
                 ),
-              )
-              : ListView(
-                children:
-                    activeBudgets
-                        .map((budget) => buildBudgetCard(budget))
-                        .toList(),
-              ),
 
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -652,7 +697,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                   context,
                   MaterialPageRoute(builder: (context) => RecordPage()),
                 ).then((_) {
-                  loadActiveBudgets();
+                  loadBudgets();
                 });
                 break;
               case 2:
@@ -660,7 +705,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
                   context,
                   MaterialPageRoute(builder: (context) => AddExpense()),
                 ).then((_) {
-                  loadActiveBudgets();
+                  loadBudgets();
                 });
                 _selectedIndex = 4;
                 break;

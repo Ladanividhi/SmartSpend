@@ -269,12 +269,6 @@ class _DashboardState extends State<Dashboard> {
             });
             switch (index) {
               case 0:
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(builder: (context) => RecordPage()),
-                // ).then((_) {
-                //   _loadExpenses();
-                // });
                 break;
               case 1:
                 Navigator.push(
@@ -306,7 +300,9 @@ class _DashboardState extends State<Dashboard> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => BudgetsPage()),
-                );
+                ).then((_) {
+                  _loadExpenses();
+                });
                 _selectedIndex=0;
                 break;
             }
