@@ -152,6 +152,12 @@ git push origin feature/AmazingFeature
 <img src="assets/screenshots/addexpense.jpg" alt="Add Expense" width="300"/>
 
 
+## 🤝 Collaborators
+
+I had the pleasure of collaborating and discussing ideas, features, and improvements with:
+
+- **Dhyey Shah** 🎉
+
 ## 🙏 Thank You!
 
 Thank you for checking out **SmartSpend 💸**!  
