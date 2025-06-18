@@ -235,11 +235,15 @@ class _BudgetsPageState extends State<BudgetsPage> {
       final start = (budget['StartDate'] as Timestamp).toDate();
       final end = (budget['EndDate'] as Timestamp).toDate();
       final now = DateTime.now();
-      final daysLeft = end.difference(DateTime(now.year, now.month, now.day)).inDays + 1;
+      int daysLeft = end.difference(DateTime(now.year, now.month, now.day)).inDays + 1;
       final total = (budget['Amount'] as num).toDouble();
       final isCategory = budget['type'] == 'category';
       final category = budget['Category'] ?? '';
 
+      if(daysLeft<=0)
+        {
+          daysLeft = 0;
+        }
       return FutureBuilder<double>(
         future: calculateSpent(
           userId,
